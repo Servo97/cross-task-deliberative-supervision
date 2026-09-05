@@ -35,6 +35,9 @@ CANARY_STATUS = "native_parallel_action_passed"
 CANARY_TEMPLATE_KIND = "robomme_p5_parallel_action_canary_template"
 CANARY_ARM = "q1"
 CANARY_TASK = "PickXtimes"
+#: Node-side mirror of launch_p5_preflight.ALLOWED_PRIORITIES (100 sweep class, 400 standard class,
+#: 2026-09-05). Kept literal here because this module runs on the node without the launcher.
+ALLOWED_PRIORITIES = (100, 400)
 CANARY_CONFIG_PATH = "robomme_integration/eval/configs/p5_parallel_action_canary.yaml"
 CANONICAL_CLAIM_ROOT = f"{STUDY_ROOT}/manifests/claims/preflight"
 CANONICAL_EVIDENCE_ROOT = f"{STUDY_ROOT}/artifacts/robomme/eval_preflight"
@@ -123,7 +126,7 @@ def load_and_validate_manifest(path: Path) -> dict:
     infrastructure = value.get("infrastructure")
     if not isinstance(infrastructure, dict) or infrastructure.get("instance_type") != "ml.p5.48xlarge":
         raise ValueError("action preflight is not assigned to p5")
-    if infrastructure.get("accelerator") != "8xH100" or infrastructure.get("priority") != 100:
+    if infrastructure.get("accelerator") != "8xH100" or infrastructure.get("priority") not in ALLOWED_PRIORITIES:
         raise ValueError("action preflight has the wrong accelerator or priority")
     claim_s3 = campaign._safe_s3(value.get("claim_s3"))
     preflight_id = value.get("preflight_id")

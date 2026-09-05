@@ -424,3 +424,28 @@ def test_physical_canary_yaml_must_equal_embedded_bytes(tmp_path, monkeypatch):
     monkeypatch.setattr(launch_p5_preflight, "REPO_ROOT", tmp_path)
     with pytest.raises(SystemExit, match="physical p5 action-canary YAML"):
         launch_p5_preflight._load_action_template(launch_p5_preflight.ACTION_TEMPLATE)
+
+
+def test_action_manifest_accepts_the_standard_priority_class_and_rejects_others(tmp_path):
+    """2026-09-05: preflight 9747ba48… (fired at 400 on the lead's instruction) died on the node with
+    "wrong accelerator or priority" because this module pinned 100 while the launcher already allowed
+    {100, 400}. The node-side set must stay in step with launch_p5_preflight.ALLOWED_PRIORITIES."""
+    from robomme_integration.eval import launch_p5_preflight
+
+    assert action.ALLOWED_PRIORITIES == launch_p5_preflight.ALLOWED_PRIORITIES == (100, 400)
+    for priority in (100, 400):
+        manifest = json.loads(json.dumps(_manifest()))
+        manifest["infrastructure"]["priority"] = priority
+        manifest.pop("manifest_sha256")
+        manifest = campaign.seal_document(manifest, field="manifest_sha256")
+        path = tmp_path / f"p{priority}.json"
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        assert action.load_and_validate_manifest(path) == manifest
+    rejected = json.loads(json.dumps(_manifest()))
+    rejected["infrastructure"]["priority"] = 200
+    rejected.pop("manifest_sha256")
+    rejected = campaign.seal_document(rejected, field="manifest_sha256")
+    path = tmp_path / "p200.json"
+    path.write_text(json.dumps(rejected), encoding="utf-8")
+    with pytest.raises(ValueError, match="wrong accelerator or priority"):
+        action.load_and_validate_manifest(path)

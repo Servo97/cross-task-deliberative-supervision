@@ -7651,3 +7651,20 @@ User instruction: fire at 400. Both eval launchers pinned 100; now `ALLOWED_PRIO
 preflight id `p5-native-eval-v1-fa05c92950e9717361a5`, RUNNABLE, arn `…/5c56263d-35e1-4141-a0be-0bc1841770aa`.
 The GitHub repo `Servo97/cross-task-deliberative-supervision` is the project's home from today;
 mentees work on Babel and request cluster runs through `rwm/ready/`.
+
+### 56.2 Preflight fire #2 FAILED on a bundle-content landmine; fire #3 queued (2026-09-05 20:28Z)
+
+`fa05c929…` reached the node, printed `SOURCE_IDENTITY_OK sha256=08a0f88d…` (so §54's chmod fix
+holds), built the openpi venv (241 packages), saw 8 CUDA devices, then died importing
+`robomme_integration.launch` → `launch_guardrails` (lives in `scripts/launch/`, never in the
+`robomme_integration/`-only bundle; `campaign.py` has the same lazy import on the campaign node
+path). Third bundle-content landmine of this class (after E0 `wsm_settings`, RoboMME `robocasa`).
+Fix: `prepared_source_bundle` / `submit_training_job` gain opt-in `vendor_files`; both eval
+launchers ship `scripts/launch/launch_guardrails.py` and `wsm_settings.py` into
+`robomme_integration/_vendor/`; `launch.py` adds `_vendor` to `sys.path` only when `scripts/launch`
+is absent (node). New test unpacks the bundle like the node and imports `robomme_integration.launch`
+with the repo root absent. 27 launch tests pass; repo commit `4a21129`. Snapshot re-synced (+
+`wsm_settings.py` symlink at its root so the vendor copy resolves) → source tree `0dd0370c…`,
+preflight `p5-native-eval-v1-9747ba48a4f744b3c2fe`, QUEUED at 400, arn `…/69ba7b2e-…`.
+Note for the hygiene pass: `scripts/ec2/push_box_creds.log` (status lines only, no secrets) is
+tracked in the repo and keeps changing — add `scripts/ec2/*.log` to `.gitignore` in phase 3.
