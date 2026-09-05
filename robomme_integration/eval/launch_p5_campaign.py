@@ -62,6 +62,8 @@ RUNTIME_SHA = "60da89c378241f75b3244be408c845989ac79f06831e63e81191851c3e3803f2"
 RUNTIME_S3 = f"{STUDY_ROOT}/artifacts/robomme/eval_runtime/v0.4.0/{RUNTIME_SHA}.tgz"
 
 PRIORITY = 100
+#: 100 = sweep class (default); 400 = standard class, allowed since 2026-09-05 on the lead's instruction.
+ALLOWED_PRIORITIES = (100, 400)
 MAX_RUN_SECONDS = 24 * 3600
 VOLUME_GB = 200
 STAGING_RESERVE_SECONDS = 2 * 3600
@@ -143,12 +145,15 @@ def _validate_preflight(
         "role": ROLE_ARN,
         "instance_type": "ml.p5.48xlarge",
         "accelerator": "8xH100",
-        "priority": PRIORITY,
     }
     if not isinstance(infrastructure, dict) or any(
         infrastructure.get(key) != expected for key, expected in expected_infra.items()
     ):
-        raise SystemExit("preflight was not run through the exact low-priority cam-robotics p5 path")
+        raise SystemExit("preflight was not run through the exact cam-robotics p5 path")
+    if infrastructure.get("priority") not in ALLOWED_PRIORITIES:
+        raise SystemExit(
+            f"preflight ran at priority {infrastructure.get('priority')}, not in {sorted(ALLOWED_PRIORITIES)}"
+        )
     if parallel_topology is not None:
         try:
             action_canary.validate_success_claim(
@@ -290,8 +295,8 @@ def finalize_queue(
 def _validate_launch(args: argparse.Namespace) -> None:
     if args.queue != QUEUE or args.role != ROLE_ARN:
         raise SystemExit("RoboMME evaluation must use the ordinary cam-robotics p5 queue/role")
-    if args.priority != PRIORITY:
-        raise SystemExit("RoboMME p5 evaluation uses low priority 100")
+    if args.priority not in ALLOWED_PRIORITIES:
+        raise SystemExit(f"RoboMME p5 evaluation must use priority in {sorted(ALLOWED_PRIORITIES)}")
     if not 1 <= args.max_run_seconds <= MAX_RUN_SECONDS:
         raise SystemExit("RoboMME p5 evaluation is capped at 24 hours")
     if args.volume_size_gb != VOLUME_GB:
@@ -378,7 +383,7 @@ def build_plan(args: argparse.Namespace, source_dir: Path) -> dict:
                 "role": ROLE_ARN,
                 "instance_type": "ml.p5.48xlarge",
                 "accelerator": "8xH100",
-                "priority": PRIORITY,
+                "priority": args.priority,
                 "max_run_seconds": args.max_run_seconds,
                 "staging_reserve_seconds": STAGING_RESERVE_SECONDS,
                 "volume_size_gb": VOLUME_GB,
@@ -526,7 +531,7 @@ def main() -> None:
         job_name=f"sarvesh-rmme-eval-{plan['queue']['queue_id'][:24]}-{stamp}",
         queue=QUEUE,
         role=ROLE_ARN,
-        priority=PRIORITY,
+        priority=args.priority,
         max_run_seconds=args.max_run_seconds,
         secrets_manager_arn=None,
         confirmed=True,

@@ -62,6 +62,8 @@ STAGED_MANIFEST = "_robomme_p5_eval_preflight_manifest.json"
 SUBMITTED_ENTRY_MODE = 0o755
 SAGEMAKER_RUNTIME_ENTRY_MODE = 0o777
 PRIORITY = 100
+#: 100 = sweep class (default); 400 = standard class, allowed since 2026-09-05 on the lead's instruction.
+ALLOWED_PRIORITIES = (100, 400)
 MAX_RUN_SECONDS = 2 * 3600
 VOLUME_GB = 100
 ACTION_MAX_RUN_SECONDS = 4 * 3600
@@ -275,8 +277,8 @@ def build_plan(args: argparse.Namespace, source_dir: Path) -> dict:
         raise SystemExit("submission blocked: obtain explicit user approval, then pass --confirm-submit")
     if args.queue != QUEUE or args.role != ROLE_ARN:
         raise SystemExit("RoboMME p5 preflight must use the ordinary cam-robotics p5 queue/role")
-    if args.priority != PRIORITY:
-        raise SystemExit("RoboMME p5 evaluation preflight must use priority 100")
+    if args.priority not in ALLOWED_PRIORITIES:
+        raise SystemExit(f"RoboMME p5 evaluation preflight must use priority in {sorted(ALLOWED_PRIORITIES)}")
     action_mode = bool(args.parallel_action_canary)
     max_run_seconds = (
         ACTION_MAX_RUN_SECONDS if action_mode and args.max_run_seconds == MAX_RUN_SECONDS else args.max_run_seconds
@@ -370,7 +372,7 @@ def build_plan(args: argparse.Namespace, source_dir: Path) -> dict:
             "role": ROLE_ARN,
             "instance_type": "ml.p5.48xlarge",
             "accelerator": "8xH100",
-            "priority": PRIORITY,
+            "priority": args.priority,
             "max_run_seconds": max_run_seconds,
             "volume_size_gb": volume_size_gb,
         },
@@ -471,7 +473,7 @@ def main() -> None:
         job_name=job_name,
         queue=QUEUE,
         role=ROLE_ARN,
-        priority=PRIORITY,
+        priority=args.priority,
         max_run_seconds=plan["max_run_seconds"],
         secrets_manager_arn=None,
         confirmed=args.confirm_submit,
