@@ -216,7 +216,18 @@ if [[ "$ROBOMME_PREFLIGHT_MODE" == "p5_parallel_workspace_action_v1" ]]; then
     --upstream-root "$UPSTREAM" \
     --vision-encoder-home "$VISION" \
     --timeout-seconds 3600 \
-    --confirm-run
+    --confirm-run || canary_rc=$?
+  if [[ "${canary_rc:-0}" -ne 0 ]]; then
+    # 2026-09-05 (preflight 6e3b28e4…, "lane p5-h100-gpu3 failed with 1"): per-lane launcher.log and
+    # server logs live only on the node, so a lane failure was undiagnosable. Ship them to a
+    # failure/ sibling of the evidence root (never the evidence namespace itself, which must stay
+    # empty until a claim is published). Small text only; the contract evidence path is unchanged.
+    failure_s3="${PREFLIGHT_CLAIM_S3%/manifests/claims/preflight/*}/artifacts/robomme/eval_preflight/$PREFLIGHT_ID/failure/$(date -u +%Y%m%dT%H%M%SZ)"
+    echo "ACTION CANARY FAILED rc=$canary_rc — shipping lane diagnostics to $failure_s3" >&2
+    aws s3 sync "$WORK/action-canary/lanes" "$failure_s3/lanes" --only-show-errors \
+      --exclude "*" --include "*.log" --include "*.json" --include "*.txt" --include "*.yaml" || true
+    exit "$canary_rc"
+  fi
   echo "ROBOMME P5 PARALLEL ACTION PREFLIGHT COMPLETE id=$PREFLIGHT_ID"
   exit 0
 elif [[ "$ROBOMME_PREFLIGHT_MODE" != "native_render_reset_v1" ]]; then

@@ -7680,3 +7680,20 @@ tests never tripped it because they run at the default 100. Fix: module-level `A
 `7be6bca2…`, preflight `p5-native-eval-v1-c42fd4878b714fc35502`, fire #4 at 400.
 Lesson (banked): a priority-class change must be grepped across BOTH the launcher and every
 node-side validator (`grep -rn "priority" robomme_integration/eval/*.py`), not just the launcher.
+
+### 56.4 Preflight fire #4 FAILED on the canary template's binding name; fire #5 queued (2026-09-05 20:58Z)
+
+`c42fd487…`: identity OK, imports OK, priority OK, then `ValueError: training completion for
+p5-parallel-action-canary-pickxtimes-q1 completion-binding mode drift: scientific_and_manifest_v1 !=
+scientific_spec_sha256_v1`. `eval/p5_q1_parallel_action_canary_v1.json` carried
+`training_completion_binding = "scientific_spec_sha256_v1"`, a name absent from
+`campaign.TRAINING_COMPLETION_BINDINGS` (= {scientific_and_manifest_v1, legacy_manifest_derived_
+scientific_v1}); the S3 receipt has `scientific_spec_sha256` → current mode, and all 112 campaign
+cells already say `scientific_and_manifest_v1`. Not priority-related: every earlier fire would have
+died here too. Fix: template → current mode; `load_and_validate_manifest` refuses unknown modes at
+dry-run; test pins the template's mode to the known set and checks the refusal (repo `fadcd4b`;
+35 tests pass). Fire #5 `p5-native-eval-v1-6e3b28e40cf84fc0e4b3` QUEUED at 400, arn
+`…/4b47d3a0-8e54-4b9f-af66-64fe7881faab`, source tree `5b4a076c…`. Each of the four failures was a
+distinct node-only contract check that the local dry-run did not exercise; three of the four are now
+exercised locally (identity roundtrip, node import, binding mode); the priority pin has a
+launcher/node equality test.
