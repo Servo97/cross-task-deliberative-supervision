@@ -449,3 +449,21 @@ def test_action_manifest_accepts_the_standard_priority_class_and_rejects_others(
     path.write_text(json.dumps(rejected), encoding="utf-8")
     with pytest.raises(ValueError, match="wrong accelerator or priority"):
         action.load_and_validate_manifest(path)
+
+
+def test_action_manifest_rejects_unknown_completion_binding_mode_before_the_node(tmp_path):
+    """2026-09-05: preflight c42fd487… reached the node and died on 'completion-binding mode drift:
+    scientific_and_manifest_v1 != scientific_spec_sha256_v1' — the canary template carried a binding
+    name the receipt checker does not know. The dry-run validator must reject it locally."""
+    from robomme_integration.eval import launch_p5_preflight
+
+    template = json.loads(launch_p5_preflight.ACTION_TEMPLATE.read_text(encoding="utf-8"))
+    assert template["cell"]["training_completion_binding"] in campaign.TRAINING_COMPLETION_BINDINGS
+    bogus = json.loads(json.dumps(_manifest()))
+    bogus["cell"]["training_completion_binding"] = "scientific_spec_sha256_v1"
+    bogus.pop("manifest_sha256")
+    bogus = campaign.seal_document(bogus, field="manifest_sha256")
+    path = tmp_path / "bogus_binding.json"
+    path.write_text(json.dumps(bogus), encoding="utf-8")
+    with pytest.raises(ValueError, match="completion binding"):
+        action.load_and_validate_manifest(path)

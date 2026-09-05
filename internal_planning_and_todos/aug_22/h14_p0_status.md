@@ -7668,3 +7668,15 @@ with the repo root absent. 27 launch tests pass; repo commit `4a21129`. Snapshot
 preflight `p5-native-eval-v1-9747ba48a4f744b3c2fe`, QUEUED at 400, arn `…/69ba7b2e-…`.
 Note for the hygiene pass: `scripts/ec2/push_box_creds.log` (status lines only, no secrets) is
 tracked in the repo and keeps changing — add `scripts/ec2/*.log` to `.gitignore` in phase 3.
+
+### 56.3 Preflight fire #3 FAILED on the node-side priority pin; fire #4 queued (2026-09-05 20:4xZ)
+
+`9747ba48…`: identity OK, vendored imports OK, 8 CUDA devices, then
+`ValueError: action preflight has the wrong accelerator or priority` — `p5_parallel_action_preflight.py`
+pinned `priority == 100` independently of the launcher (which already accepted 400). The launcher
+tests never tripped it because they run at the default 100. Fix: module-level `ALLOWED_PRIORITIES =
+(100, 400)` in the node module + a test pinning it equal to the launcher's set and checking
+100/400 accepted, 200 rejected (repo commit `5e9db46`). Snapshot re-synced → source tree
+`7be6bca2…`, preflight `p5-native-eval-v1-c42fd4878b714fc35502`, fire #4 at 400.
+Lesson (banked): a priority-class change must be grepped across BOTH the launcher and every
+node-side validator (`grep -rn "priority" robomme_integration/eval/*.py`), not just the launcher.

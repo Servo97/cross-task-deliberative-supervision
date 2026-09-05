@@ -109,6 +109,14 @@ def load_and_validate_manifest(path: Path) -> dict:
         raise ValueError("action preflight cell is not the source-matched PickXtimes/Q1 probe")
     if "result_claim_s3" in cell:
         raise ValueError("unscored action-preflight cell must not contain a score claim URI")
+    # 2026-09-05: preflight c42fd487… died on the node with "completion-binding mode drift" because the
+    # template carried a binding name the receipt checker does not know. Refuse it at dry-run time.
+    if cell.get("training_completion_binding") not in campaign.TRAINING_COMPLETION_BINDINGS:
+        raise ValueError(
+            "action preflight cell has an unknown training completion binding "
+            f"{cell.get('training_completion_binding')!r}; expected one of "
+            f"{sorted(campaign.TRAINING_COMPLETION_BINDINGS)}"
+        )
     probe = value.get("probe")
     if probe != {
         "actions_expected": EXPECTED_ACTIONS,

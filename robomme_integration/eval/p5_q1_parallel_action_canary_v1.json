@@ -17,7 +17,7 @@
     "run_manifest_sha256": "72d98bad0be0197fe2ce8b642a63e9448ab68a75195a6500072e45ff86405d74",
     "scientific_spec_sha256": "411134fe1d1b97970f636e802540c0ee30d53feeb74e81b73670d62014ab9f35",
     "task": "PickXtimes",
-    "training_completion_binding": "scientific_spec_sha256_v1",
+    "training_completion_binding": "scientific_and_manifest_v1",
     "training_completion_claim_s3": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/manifests/claims/train/st-v1-pickxtimes-q1-seed0-411134fe1d1b9797/step-19999.complete.json",
     "training_nuisance": {
       "action_horizon": 20,
