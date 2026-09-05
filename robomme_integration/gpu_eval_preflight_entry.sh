@@ -224,8 +224,10 @@ if [[ "$ROBOMME_PREFLIGHT_MODE" == "p5_parallel_workspace_action_v1" ]]; then
     # empty until a claim is published). Small text only; the contract evidence path is unchanged.
     failure_s3="${PREFLIGHT_CLAIM_S3%/manifests/claims/preflight/*}/artifacts/robomme/eval_preflight/$PREFLIGHT_ID/failure/$(date -u +%Y%m%dT%H%M%SZ)"
     echo "ACTION CANARY FAILED rc=$canary_rc — shipping lane diagnostics to $failure_s3" >&2
-    aws s3 sync "$WORK/action-canary/lanes" "$failure_s3/lanes" --only-show-errors \
+    # build_lane_commands is given work_root=<work-root>/evidence, so lanes live at evidence/lanes/<lane>/.
+    aws s3 sync "$WORK/action-canary/evidence" "$failure_s3/evidence" --only-show-errors \
       --exclude "*" --include "*.log" --include "*.json" --include "*.txt" --include "*.yaml" || true
+    aws s3 ls --recursive "$failure_s3/" | tail -20 || true
     exit "$canary_rc"
   fi
   echo "ROBOMME P5 PARALLEL ACTION PREFLIGHT COMPLETE id=$PREFLIGHT_ID"

@@ -7697,3 +7697,16 @@ dry-run; test pins the template's mode to the known set and checks the refusal (
 distinct node-only contract check that the local dry-run did not exercise; three of the four are now
 exercised locally (identity roundtrip, node import, binding mode); the priority pin has a
 launcher/node equality test.
+
+### 56.5 Preflight fire #5 reached the lanes and one lane failed; fire #6 ships diagnostics (2026-09-05 21:15Z)
+
+`6e3b28e4…` passed identity, imports, priority and binding checks, built the runtime, and launched
+the 8 canary lanes; then `RuntimeError: p5 action-canary lane p5-h100-gpu3 failed with 1` (the first
+failing lane aborts all; process groups cleaned). The lane's `launcher.log` (stdout/stderr) and
+server log live only under `$WORK/action-canary/lanes/` on the node — nothing shipped them, so the
+cause is unknown. Fix: on a nonzero canary exit the entry syncs `action-canary/lanes/**.{log,json,
+yaml,txt}` to `artifacts/robomme/eval_preflight/<id>/failure/<utc>/` — a sibling of the evidence
+root, which the admission gate lists with prefix `<id>/evidence/` and requires empty (verified).
+Repo commit `d5a326a`. Fire #6 `p5-native-eval-v1-a37272fbd195492fd31e` at 400, source tree
+`3d11eb1a…`. If gpu3 fails again the diagnostics tell us whether it is the lane (port/EGL/vulkan
+fallback: the log shows "Failed to find Vulkan ICD file" warnings from sapien) or the checkpoint.
