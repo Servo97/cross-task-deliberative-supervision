@@ -64,6 +64,11 @@ RUNTIME_S3 = f"{STUDY_ROOT}/artifacts/robomme/eval_runtime/v0.4.0/{RUNTIME_SHA}.
 PRIORITY = 100
 #: 100 = sweep class (default); 400 = standard class, allowed since 2026-09-05 on the lead's instruction.
 ALLOWED_PRIORITIES = (100, 400)
+#: Same vendoring as launch_p5_preflight: node-side campaign.py lazily imports robomme_integration.launch.
+NODE_VENDOR_FILES = (
+    (REPO_ROOT / "scripts" / "launch" / "launch_guardrails.py", "_vendor/launch_guardrails.py"),
+    (REPO_ROOT / "wsm_settings.py", "_vendor/wsm_settings.py"),
+)
 MAX_RUN_SECONDS = 24 * 3600
 VOLUME_GB = 200
 STAGING_RESERVE_SECONDS = 2 * 3600
@@ -310,7 +315,9 @@ def build_plan(args: argparse.Namespace, source_dir: Path) -> dict:
         if getattr(args, "parallel_fixed50", False)
         else None
     )
-    with prepared_source_bundle(source_dir, ENTRY, {"SAGEMAKER_PROGRAM": ENTRY}, None) as (
+    with prepared_source_bundle(
+        source_dir, ENTRY, {"SAGEMAKER_PROGRAM": ENTRY}, None, vendor_files=NODE_VENDOR_FILES
+    ) as (
         staged,
         _,
         _,
@@ -516,6 +523,7 @@ def main() -> None:
     result = submit_training_job(
         entry=ENTRY,
         source_dir=source_dir,
+        vendor_files=NODE_VENDOR_FILES,
         environment=plan["environment"],
         image_uri=IMAGE,
         instance_type="ml.p5.48xlarge",

@@ -211,7 +211,13 @@ def test_preflight_entry_identity_survives_tar_roundtrip_and_toolkit_chmod(tmp_p
     manifest_name = launch_p5_preflight.STAGED_MANIFEST
     assert launch_p5_preflight.SUBMITTED_ENTRY_MODE == 0o755
     assert launch_p5_preflight.SAGEMAKER_RUNTIME_ENTRY_MODE == 0o777
-    with launch_p5_preflight.prepared_source_bundle(source, entry_name, {"SAGEMAKER_PROGRAM": entry_name}, None) as (
+    with launch_p5_preflight.prepared_source_bundle(
+        source,
+        entry_name,
+        {"SAGEMAKER_PROGRAM": entry_name},
+        None,
+        vendor_files=launch_p5_preflight.NODE_VENDOR_FILES,
+    ) as (
         staged,
         _,
         _,
@@ -287,3 +293,39 @@ def test_failed_preflight_node_hash_is_exactly_the_toolkit_entry_chmod(tmp_path)
         mode_overrides={launch_p5_preflight.ENTRY: 0o755},
     )
     assert normalized == submitted
+
+
+def test_eval_bundle_vendors_launch_guardrails_so_node_side_imports_resolve(tmp_path):
+    """2026-09-05: preflight fa05c929… passed the identity check and then died on
+    `ModuleNotFoundError: launch_guardrails` — robomme_integration.launch imports it from
+    scripts/launch, which the bundle (robomme_integration/ only) never shipped. The eval launchers now
+    vendor launch_guardrails.py + wsm_settings.py into robomme_integration/_vendor/; this test unpacks
+    the bundle the way the node does and imports robomme_integration.launch with the repo root absent."""
+    source_dir = Path(launch_p5_preflight.__file__).resolve().parents[1]
+    with launch_p5_preflight.prepared_source_bundle(
+        source_dir,
+        launch_p5_preflight.ENTRY,
+        {"SAGEMAKER_PROGRAM": launch_p5_preflight.ENTRY},
+        None,
+        vendor_files=launch_p5_preflight.NODE_VENDOR_FILES,
+    ) as (staged, _, _):
+        assert (staged / "_vendor" / "launch_guardrails.py").is_file()
+        assert (staged / "_vendor" / "wsm_settings.py").is_file()
+        node_source = tmp_path / "source"
+        node_source.mkdir()
+        import shutil
+
+        shutil.copytree(staged, node_source / "robomme_integration", symlinks=True)
+    assert not (node_source / "scripts").exists()
+    env = {k: v for k, v in os.environ.items() if k not in {"PYTHONPATH", "PYTHONSAFEPATH"}}
+    env["PYTHONPATH"] = str(node_source)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    probe = subprocess.run(
+        [sys.executable, "-c", "import robomme_integration.launch as l; print(l.STUDY_ROOT)"],
+        cwd=node_source,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert probe.returncode == 0, probe.stderr
+    assert probe.stdout.strip().startswith("s3://")

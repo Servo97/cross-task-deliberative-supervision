@@ -66,6 +66,7 @@ def _preflight(source: Path, destination: Path) -> Path:
         launch_p5_campaign.ENTRY,
         {"SAGEMAKER_PROGRAM": launch_p5_campaign.ENTRY},
         None,
+        vendor_files=launch_p5_campaign.NODE_VENDOR_FILES,
     ) as (staged, _, _):
         source_sha = launch_p5_campaign.source_tree_sha256(staged)
     value = {
@@ -402,7 +403,9 @@ def test_campaign_entry_identity_survives_tar_roundtrip_and_toolkit_chmod(tmp_pa
     generated = list(launch_p5_campaign.GENERATED_FILES)
     assert launch_p5_campaign.SUBMITTED_ENTRY_MODE == 0o755
     assert launch_p5_campaign.SAGEMAKER_RUNTIME_ENTRY_MODE == 0o777
-    with launch_p5_campaign.prepared_source_bundle(source, entry_name, {"SAGEMAKER_PROGRAM": entry_name}, None) as (
+    with launch_p5_campaign.prepared_source_bundle(
+        source, entry_name, {"SAGEMAKER_PROGRAM": entry_name}, None, vendor_files=launch_p5_campaign.NODE_VENDOR_FILES
+    ) as (
         staged,
         _,
         _,

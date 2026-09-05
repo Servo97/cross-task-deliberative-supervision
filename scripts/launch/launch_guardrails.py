@@ -340,11 +340,16 @@ exec "./$WSM_ORIGINAL_ENTRY" "$@"
 
 
 @contextlib.contextmanager
-def prepared_source_bundle(source_dir, entry, environment, secrets_manager_arn=None):
+def prepared_source_bundle(source_dir, entry, environment, secrets_manager_arn=None, vendor_files=None):
     """Yield a secret-free source tree, safe entrypoint, and copied environment.
 
     A secret ARN enables an on-node wrapper that fetches its JSON through the execution role.
     Without an ARN, W&B is disabled and jobs rely only on role/S3 or image-cached assets.
+
+    ``vendor_files`` is an optional sequence of ``(source_path, relative_destination)`` pairs copied
+    into the staged tree before it is hashed and shipped, for node-side code that imports modules
+    living outside ``source_dir`` (e.g. ``launch_guardrails`` / ``wsm_settings`` for a bundle that
+    ships only ``robomme_integration/``). Opt-in per launcher so other bundles keep their identities.
     """
     source_dir = pathlib.Path(source_dir)
     sensitive_keys = sorted(key for key, value in environment.items() if key.upper() in _SENSITIVE_ENV_KEYS and value)
@@ -363,6 +368,13 @@ def prepared_source_bundle(source_dir, entry, environment, secrets_manager_arn=N
         )
         if not (staged / entry).exists():
             raise SystemExit(f"sanitized source-dir missing required {entry}")
+        for vendor_src, vendor_rel in vendor_files or ():
+            vendor_src = pathlib.Path(vendor_src)
+            if not vendor_src.is_file():
+                raise SystemExit(f"vendor file missing: {vendor_src}")
+            vendor_dest = staged / vendor_rel
+            vendor_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(vendor_src, vendor_dest)
 
         safe_environment = dict(environment)
         launch_entry = entry
@@ -406,6 +418,7 @@ def submit_training_job(
     disable_profiler=None,
     expected_source_tree_sha256=None,
     staged_source_files=None,
+    vendor_files=None,
 ):
     """Submit one guarded SageMaker TrainingQueue job and return the queue result."""
     require_submission_confirmation(dry_run=False, confirmed=confirmed)
@@ -418,7 +431,7 @@ def submit_training_job(
     )
     boto3, sagemaker, Estimator, TrainingQueue = load_aws_sdk()
     validate_caller_account(boto3)
-    with prepared_source_bundle(source_dir, entry, environment, secrets_manager_arn) as (
+    with prepared_source_bundle(source_dir, entry, environment, secrets_manager_arn, vendor_files=vendor_files) as (
         safe_source_dir,
         safe_entry,
         safe_environment,

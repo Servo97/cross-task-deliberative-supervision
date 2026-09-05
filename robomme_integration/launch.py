@@ -15,6 +15,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 LAUNCH_UTILS = REPO_ROOT / "scripts" / "launch"
 sys.path.insert(0, str(LAUNCH_UTILS))
+# Node side: the SageMaker eval bundle ships only robomme_integration/, so scripts/launch and the
+# repo-root wsm_settings.py do not exist there. The eval launchers vendor both into
+# robomme_integration/_vendor/ (prepared_source_bundle vendor_files, 2026-09-05: preflight
+# fa05c929… died on `No module named 'launch_guardrails'` after passing the identity check).
+_VENDOR = Path(__file__).resolve().parent / "_vendor"
+if not (LAUNCH_UTILS / "launch_guardrails.py").exists() and _VENDOR.is_dir():
+    sys.path.insert(0, str(_VENDOR))
 from launch_guardrails import (  # noqa: E402
     DEFAULT_RESULTS_BUCKET,
     DEXJOCO_IMAGE_REPO,

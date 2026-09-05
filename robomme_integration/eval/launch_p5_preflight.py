@@ -64,6 +64,12 @@ SAGEMAKER_RUNTIME_ENTRY_MODE = 0o777
 PRIORITY = 100
 #: 100 = sweep class (default); 400 = standard class, allowed since 2026-09-05 on the lead's instruction.
 ALLOWED_PRIORITIES = (100, 400)
+#: Shipped into the bundle at robomme_integration/_vendor/ so node-side imports of
+#: robomme_integration.launch resolve (see launch.py); changes the source identity on purpose.
+NODE_VENDOR_FILES = (
+    (REPO_ROOT / "scripts" / "launch" / "launch_guardrails.py", "_vendor/launch_guardrails.py"),
+    (REPO_ROOT / "wsm_settings.py", "_vendor/wsm_settings.py"),
+)
 MAX_RUN_SECONDS = 2 * 3600
 VOLUME_GB = 100
 ACTION_MAX_RUN_SECONDS = 4 * 3600
@@ -291,7 +297,9 @@ def build_plan(args: argparse.Namespace, source_dir: Path) -> dict:
         raise SystemExit(f"RoboMME p5 preflight is capped at {label}")
     if volume_size_gb != expected_volume:
         raise SystemExit(f"RoboMME p5 preflight uses exactly {expected_volume} GiB in this mode")
-    with prepared_source_bundle(source_dir, ENTRY, {"SAGEMAKER_PROGRAM": ENTRY}, None) as (staged, _, _):
+    with prepared_source_bundle(
+        source_dir, ENTRY, {"SAGEMAKER_PROGRAM": ENTRY}, None, vendor_files=NODE_VENDOR_FILES
+    ) as (staged, _, _):
         submitted_mode = stat.S_IMODE((staged / ENTRY).lstat().st_mode)
         if submitted_mode != SUBMITTED_ENTRY_MODE:
             raise SystemExit(
@@ -454,6 +462,7 @@ def main() -> None:
     result = submit_training_job(
         entry=ENTRY,
         source_dir=source_dir,
+        vendor_files=NODE_VENDOR_FILES,
         environment=plan["environment"],
         image_uri=IMAGE,
         instance_type="ml.p5.48xlarge",

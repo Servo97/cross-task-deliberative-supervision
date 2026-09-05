@@ -7642,3 +7642,12 @@ INDET, rcb FAIL (temporal gap 0.028) — so the rcb PASS of every trained cell i
 **Consequences.** ω-arm encoder for rmb P′ / rcb R = `109e99680ca5c198` (pending D7 parity, which
 needs a working local GPU or a cluster node). ctrl-0b s28 `48e38a6dffcf9f61` is the matched control.
 No policy arm can be fired without multi-GPU compute after the TRI hand-off.
+
+### 56.1 RoboMME preflight fired at priority 400 (2026-09-05 19:49Z)
+
+User instruction: fire at 400. Both eval launchers pinned 100; now `ALLOWED_PRIORITIES = (100, 400)`
+(default still 100; the campaign's claim check accepts either; 16 launch tests pass; repo commit
+`d15d1b0`). Snapshot `rmme_eval_snapshot_0904` re-synced (diff 0) → source tree `08a0f88d…`,
+preflight id `p5-native-eval-v1-fa05c92950e9717361a5`, RUNNABLE, arn `…/5c56263d-35e1-4141-a0be-0bc1841770aa`.
+The GitHub repo `Servo97/cross-task-deliberative-supervision` is the project's home from today;
+mentees work on Babel and request cluster runs through `rwm/ready/`.
