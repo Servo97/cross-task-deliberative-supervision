@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
@@ -29,6 +30,7 @@ from robomme_integration.eval.workspace_runner import (  # noqa: E402
     GPU_ENABLED_WORKSPACE_TRAINER_SHA256,
     LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256,
     OMEGA_DIM,
+    REFACTORED_WORKSPACE_TRAINER_SHA256,
     OnlineWorkspaceRunner,
     TaskRoutedOnlineWorkspaceRunner,
     WorkspaceSession,
@@ -157,20 +159,22 @@ def test_official_nonempty_demo_history_transport_is_unchanged(monkeypatch):
 
 def test_workspace_trainer_accepts_only_exact_or_reviewed_legacy_current_pair(tmp_path):
     trainer = _workspace_trainer_source()
+    # The live file is the 2026-08-12 refactor; its own digest is the exact path, and both earlier
+    # reviewed producers are admitted through the refactor admission (status §56.7). The pin below
+    # is what keeps a silent edit of the trainer from being served: it moves the digest.
+    assert hashlib.sha256(trainer.read_bytes()).hexdigest() == REFACTORED_WORKSPACE_TRAINER_SHA256
     assert (
         validate_workspace_trainer_implementation(
-            GPU_ENABLED_WORKSPACE_TRAINER_SHA256,
+            REFACTORED_WORKSPACE_TRAINER_SHA256,
             trainer,
         )
         == "exact_full_source_sha256"
     )
-    assert (
-        validate_workspace_trainer_implementation(
-            LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256,
-            trainer,
+    for producer in (GPU_ENABLED_WORKSPACE_TRAINER_SHA256, LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256):
+        assert (
+            validate_workspace_trainer_implementation(producer, trainer)
+            == "reviewed_training_loop_refactor_2026_08_12_v1"
         )
-        == "reviewed_tpu_to_gpu_device_admission_only_v1"
-    )
 
     with pytest.raises(ValueError, match="trainer implementation differs"):
         validate_workspace_trainer_implementation("0" * 64, trainer)

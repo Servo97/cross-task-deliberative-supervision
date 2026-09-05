@@ -34,6 +34,16 @@ VISION_PARAMS_SHA256 = "f16e9312f24760e6426ab82e42b606e80542ffbf351c9b40736bfb34
 # SHA-256; this proves that no encoder, initializer, loss, or inference math changed.
 LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256 = "103f93f8571e0bc55a5cde56dcc931c5638b5e8dcaf1d012698ba7ed8d282570"
 GPU_ENABLED_WORKSPACE_TRAINER_SHA256 = "a5ed0fb47c234b4cadc71d9a8662fe6d5703e5b69f56915502b6cca272edbeb5"
+#: 2026-08-12 refactor of workspace_deliberative.py (reviewed 2026-09-05 against the Aug-10 bundle
+#: sarvesh-rmme-PickXtimes-wsm-d16-2c36d9519c880876-0810-182116/source): 23 lines out / 117 in, all
+#: training-loop plumbing — pluggable loss_function / sampler_class / run_config_builder /
+#: init_params_function, an EMA train step, checkpoint_completion_payload(). The encoder definition,
+#: loss math, normalisation and ω layout are unchanged, so checkpoints produced by either earlier
+#: trainer serve identically under this file. Status §56.7.
+REFACTORED_WORKSPACE_TRAINER_SHA256 = "b8d66d26e43af41f6e9937e1d0fa77b161839fc2079a7ad004db7119d8577a63"
+_REVIEWED_PRODUCERS_FOR_REFACTORED = frozenset(
+    {LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256, GPU_ENABLED_WORKSPACE_TRAINER_SHA256}
+)
 _GPU_ENABLED_DEVICE_GUARD = b"""    platforms = {device.platform for device in devices}\n    if not args.cpu_smoke and platforms not in ({"tpu"}, {"gpu"}):\n        raise SystemExit("WSM deliberative production training requires homogeneous TPU or GPU devices")\n"""
 _LEGACY_TPU_ONLY_DEVICE_GUARD = b"""    if not args.cpu_smoke and {device.platform for device in devices} != {"tpu"}:\n        raise SystemExit("WSM deliberative production training requires TPU devices")\n"""
 UPSTREAM_PREPROCESS_SHA256 = {
@@ -98,6 +108,8 @@ def validate_workspace_trainer_implementation(producer_sha256: object, trainer: 
     current_sha256 = hashlib.sha256(trainer_bytes).hexdigest()
     if producer_sha256 == current_sha256:
         return "exact_full_source_sha256"
+    if current_sha256 == REFACTORED_WORKSPACE_TRAINER_SHA256 and producer_sha256 in _REVIEWED_PRODUCERS_FOR_REFACTORED:
+        return "reviewed_training_loop_refactor_2026_08_12_v1"
     if (
         producer_sha256 != LEGACY_TPU_ONLY_WORKSPACE_TRAINER_SHA256
         or current_sha256 != GPU_ENABLED_WORKSPACE_TRAINER_SHA256

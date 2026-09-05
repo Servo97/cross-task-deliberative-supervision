@@ -7710,3 +7710,41 @@ root, which the admission gate lists with prefix `<id>/evidence/` and requires e
 Repo commit `d5a326a`. Fire #6 `p5-native-eval-v1-a37272fbd195492fd31e` at 400, source tree
 `3d11eb1a…`. If gpu3 fails again the diagnostics tell us whether it is the lane (port/EGL/vulkan
 fallback: the log shows "Failed to find Vulkan ICD file" warnings from sapien) or the checkpoint.
+
+### 56.6 Fire #6: lane gpu4 failed, diagnostics sync missed the directory; fire #7 (2026-09-05 21:35Z)
+
+`a37272fb…` reached the lanes again; this time `p5-h100-gpu4 failed with 1` (gpu3 last time → the
+first lane to exit aborts the rest; the failure is most likely common to every lane). The new
+failure handler ran but synced `action-canary/lanes`, which does not exist: `build_lane_commands`
+receives `work_root=<work-root>/evidence`, so the lanes are at `action-canary/evidence/lanes/`.
+Fixed (sync the whole `evidence/` dir, logs/json/yaml/txt only; repo `95e04c7`). Fire #7
+`p5-native-eval-v1-0fdd740cb94e03ccd713` at 400, source tree `b7ce5422…`. Cost so far: seven
+p5 admissions of 2–15 min each; the eval lane has never before executed on a node, so each node-only
+check is being discovered once and pinned by a local test.
+
+### 56.7 Fire #7 diagnosed: workspace-trainer identity pin stale since 2026-08-12 (2026-09-05 22:05Z)
+
+With lane diagnostics shipped (`<id>/failure/20260905T214542Z/evidence/lanes/*`): every lane's policy
+server exited 1 in `CheckpointWorkspaceEncoder.__init__` →
+`validate_workspace_trainer_implementation` → "workspace checkpoint trainer implementation differs
+from evaluation source". The Q1 canary workspace (encoder `dd5a17e4…`, produced 2026-08-06) records
+`implementation_sha256 = 103f93f8…` (legacy TPU trainer). The check admits a legacy producer only
+when the live `training/workspace_deliberative.py` equals the one reviewed GPU version `a5ed0fb4…`;
+the live file has been `b8d66d26…` since an **Aug 12 edit** (mtime 2026-08-12 17:48 — the Sep 3
+hygiene pass did NOT touch it). `test_workspace_trainer_accepts_only_exact_or_reviewed_legacy_
+current_pair` has therefore failed since Aug 12 (one of the 28 baseline "sealed pin" failures) and
+no workspace-arm checkpoint from a legacy/GPU producer has been servable on a node since.
+
+Review of the Aug 12 delta (a5ed → b8d6, recovered from the Aug-10 job bundle
+`sarvesh-rmme-PickXtimes-wsm-d16-2c36d9519c880876-0810-182116/source/sourcedir.tar.gz`; Aug-06 bundle
+confirms 103f): 23 lines removed / 117 added — `_train_step` gains `loss_function`, new
+`_train_step_ema`, `checkpoint_completion_payload()`, `train()` gains `sampler_class /
+loss_function / run_config_builder / init_params_function` injection points and the EMA branch (the
+dense-v2 producer's hooks). No change to the encoder, loss math, normalisation or ω layout →
+checkpoints from either earlier trainer serve identically under b8d6.
+
+Fix: `REFACTORED_WORKSPACE_TRAINER_SHA256 = b8d66d26…`; producers {103f (legacy), a5ed (GPU)} are
+admitted under it as `reviewed_training_loop_refactor_2026_08_12_v1`; exact and one-byte-drift
+semantics unchanged; the stale pin test now pins the live digest (so any further edit of the trainer
+fails the suite loudly, as intended). Recovered trainer versions kept at
+`scratchpad/trainer_versions/` (session-local) — the S3 bundles are the durable record.
