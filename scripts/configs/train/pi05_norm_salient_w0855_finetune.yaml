@@ -1,0 +1,82 @@
+# pi05_norm_salient_w0855_finetune.yaml — n-wave audit discriminator #1 (aux:flow rebalance).
+#
+# EXACT copy of pi05_norm_s3_salient_finetune.yaml (the n-wave salient arm, run
+# s3-a8a052c4dc2a49b5, sealed 55.3 = -2.9 vs the n-baseline 58.2) plus ONE change:
+# `model.salient_weight: 1.0 -> 0.855`, plus the distinguishing config_name/exp_name/output_dir.
+# `data.norm_split_nav: true` is retained — this is a norm-CORRECTED run, in the n-wave's sealed
+# protocol lineage, not a return to the old stats.
+#
+# WHY 0.855. The forensic audit found no bug in the nav split (all 8 n-wave norm blobs
+# byte-identical to a local recomputation, correct dim-7/8/9 ratios 1.522/1.466/1.661, env
+# propagation verified per arm family). What it did find: un-squashing the nav dims SHRANK THE FLOW
+# LOSS by 14.5%, because the z-scored action targets those dims contribute are no longer inflated.
+# Every aux term in this study carries a FIXED weight, so a 14.5% smaller flow loss silently raises
+# the aux:flow ratio by ~17% (1/0.855 = 1.170). The salient arm — the only >3 sigma regression in
+# the wave — is therefore not being tested at its tuned operating point under corrected stats; it
+# is being tested ~17% over-regularized. 0.855 is the MEASURED flow-loss ratio (corrected/original),
+# so this run restores the exact pre-split aux:flow balance. It is derived, not fitted: no sweep,
+# one value, one prediction.
+#
+# PREDICTION (the discriminator). If the n-wave salient regression is staleness-via-rebalance, this
+# lands at ~-0.9 vs the n-baseline, i.e. it recovers ~2 points of the -2.9 and rejoins the pack of
+# ~flat arms. If it stays near -2.9, the rebalance explanation is dead for this arm and the salient
+# collapse is a genuine interaction between deliberative supervision and corrected nav statistics.
+# Either outcome is informative; nothing else in the recipe moves, so the delta is attributable to
+# the weight alone.
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s3_salient_normsplit_w0855
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # The jepa aux this arm replaces, held at exactly zero. Both terms are still CONSTRUCTED (the arm
+  # rides the jepa interface); at weight 0.0 they contribute nothing to the loss or its gradient.
+  jepa_weight: 0.0
+  sigreg_weight: 0.0
+  # The deliberative-supervision aux itself. 0.855 = the measured corrected/original flow-loss
+  # ratio; see the header. The n-wave parent ran 1.0.
+  salient: true
+  salient_weight: 0.855
+  labels_s3: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/wsm_labels
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  norm_split_nav: true          # retained from the n-wave parent: this is a corrected-stats run
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s3_salient_normsplit_w0855
+  output_dir: ckpts/vla_base/pi05_stage_s3_salient_finetune_normsplit_w0855
+
+eval: null

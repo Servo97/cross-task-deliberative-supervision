@@ -1,0 +1,88 @@
+# ReMemBench arm rmb-gdnjepa-k16 — the S5 COMBO stack on the 13-task set at JEPA horizon k=16.
+#
+# Recipe = pi05_stage_s1_gdnjepa_finetune.yaml: the s1 gated-DeltaNet steering conditioner
+# (cond_type gated_deltanet, cond_window 8, tanh(alpha) seam) AND the s3-jw01 train-only JEPA+SigReg
+# aux (lambda_jepa 0.1, sigreg 0.05, k=1) in one run. `jepa_aux: true` is the recipe-level opt-in;
+# the loader ships wsm_w_window AND wsm_w_target from the same per-episode omega cache.
+#
+# The ONLY differences from the RoboCasa s1-gdnjepa arm are the data substrate and the step schedule
+# (see pi05_rmb_base_finetune.yaml) — i.e. exactly the deltas rmb-deltanet takes from s1-deltanet.
+#
+# SERVE: identical to rmb-deltanet. The aux head is train-only and is dropped at load, so the
+# pos_decay_bias auto-detect still serves the gated-DeltaNet conditioner at window 8.
+#
+# norm_split_nav is deliberately ABSENT (=> false): the ReMemBench set never used that knob, so the
+# five arms stay mutually comparable.
+#
+# SUBMIT-TIME (not yaml fields): --dataset-profile remembench_v02_train13 --train-steps 15000 with
+#   TARGET_DATA_S3 = s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/datasets/
+#   remembench_v02 and target inventory artifact remembench_train13.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_rmb_gdnjepa_k16
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet
+  cond_window: 8
+  jepa_aux: true              # carry the train-only aux ALONGSIDE the tanh-interface read
+  jepa_weight: 0.1            # lambda on the (1-cos) prediction term (s3 default 1.0)
+  jepa_num_futures: 16        # grid rows +1..+16 — the ONLY delta from pi05_rmb_gdnjepa_finetune.yaml
+                              # sigreg_weight stays at its 0.05 default.
+                              #
+                              # WHY k=16: the shipped combo (run s1-9b508f6799c3d128, 36.9) used the
+                              # jw01 lambda point at k=1, but the ReMemBench predictive-aux arm it is
+                              # supposed to be additive WITH is rmb-jw01k16 — jepa_weight 0.1 AND
+                              # k=16. At k=1 the combo was never the sum of the two arms actually in
+                              # the table, so "is the recurrent interface additive with the
+                              # predictive aux?" had no matched comparison. This cell supplies it:
+                              # rmb-deltanet (w8) + rmb-jw01k16 (0.1/16) with nothing else moved.
+                              #
+                              # k reaches the LOADER, not just the model: the combo path in
+                              # finetune_pi_05_with_workspace.py exports WSM_JEPA=1 before importing
+                              # _pi05_common, whose build_train_config re-exports
+                              # WSM_JEPA_NUM_FUTURES from this yaml BEFORE its (lazy) openpi imports,
+                              # and a post-import check fails loudly if the two ever disagree.
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: remembench13
+  source: human
+  split: target
+  defer_image_resize_to_model_preprocess: false
+  # NO subsample block: remembench13 trains on every demo.
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 500
+  decay_steps: 25000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 15000
+  # INERT on the Stage-S launch path: submit_pi_stage_s.py sets WSM_FINAL_ONLY_CHECKPOINTS=1
+  # + WSM_SAVE_INTERVAL=max_steps, _pi05_common forces save_interval=max_steps under that
+  # flag, and the entry refuses any retained step dir other than 14999. One checkpoint ships.
+  save_interval: 2500
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_rmb_gdnjepa_k16
+  output_dir: ckpts/vla_base/pi05_rmb_gdnjepa_k16_finetune
+
+eval: null

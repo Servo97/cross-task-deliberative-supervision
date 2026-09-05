@@ -1,0 +1,87 @@
+# H13-R6 (arm key `h13_dec_jepa_gdn8`) - R2 composed with the gdn8 history module.
+#
+# Reading (d) of the campaign: R5-R8 vs the dnw8 anchor (59.9) measures whether live WSM supervision
+# COMPOSES with an explicit history module, against the pre-registered risk that the two mechanisms
+# are redundant (both feed temporal context) and the gains do not stack.
+#
+# Everything except the two gdn flags is byte-identical to R2.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_h13_dec_jepa_lang2_gdn8
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- H13 live/joint WSM (identical to R1) ---
+  h13: true
+  h13_w_dim: 512
+  h13_enc_layers: 4
+  h13_enc_heads: 8
+  h13_dec_weight: 0.5
+  h13_sigreg_weight: 0.05
+  # --- the one factor R2 adds ---
+  h13_jepa: true
+  h13_jepa_weight: 0.1
+  h13_future_k: 1
+  h13_future_stride: 8
+  labels_s3: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/wsm_labels
+  # --- gdn8 history module (P7): the dnw8 recipe's flags, merged VERBATIM from the sealed 59.9
+  # anchor `pi05_stage_s1_deltanet_finetune.yaml`. These two lines ARE the entire dnw8 delta.
+  # Selecting them turns this arm into the S5-style sanctioned combo {tanh read + H13 live aux}:
+  # the gated-DeltaNet reads a cond_window-long omega window at inference (so this arm DOES consume
+  # the omega cache, unlike R1-R4), while every H13 subtree stays train-only and is stripped at
+  # serve. Serve stack = dnw8 (gdn KEPT, aux stripped), eval server_state_mode per_env_isolated_v1.
+  cond_type: gated_deltanet
+  cond_window: 8
+  # --- R3b language decode: CROSS-ENTROPY over the caption vocabulary ---
+  # Supersedes the R3/R4 InfoNCE-vs-frozen-embedding head, which collapsed to the caption centroid
+  # (distinct captions have mean pairwise cosine 0.841, so predicting the mean nearly satisfied the
+  # cosine term while InfoNCE never left chance) and cost ~5pp. CE cannot be satisfied that way:
+  # predicting the mean gives you the class prior, not the label. Normalised by ln V so the term is
+  # 1.0 at init and vocabulary-size invariant. Ids are the index into the sorted unique caption
+  # vocabulary (V=8661), deterministic from the caption text alone.
+  h13_lang_cls: true
+  h13_lang_cls_weight: 0.5
+  h13_lang_vocab: 8661
+  caption_emb_s3: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/artifacts/captions/78b644501b37d2dc43ebbf8d818172bf6e0ac80b6f2586db78e4bd299794571f
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_h13_dec_jepa_lang2_gdn8
+  output_dir: ckpts/vla_base/pi05_stage_h13_dec_jepa_lang2_gdn8_finetune
+
+eval: null

@@ -1,0 +1,97 @@
+# H13-R2 (arm key `h13_dec_jepa`) — R1 plus LeJEPA alignment against a LIVE target.
+#
+# Copy of pi05_stage_h13_dec_finetune.yaml with ONE factor added: a predictor from the action
+# expert's penultimate to w_{t+k}, where the target is the SAME live encoder applied to the FUTURE
+# frame. Per LeJEPA there is NO stop-gradient, NO EMA teacher and no predictor asymmetry — SIGReg on
+# BOTH sides (on w and on the penultimate features) is what is claimed to make that safe, and
+# removing the asymmetry tricks is the paper's actual contribution. If the bottleneck collapses
+# (w eff-rank -> 1 in the canary telemetry), that claim has failed on this data and the arm is
+# killed rather than patched with a stop-gradient.
+#
+#   loss = L_flow
+#        + 0.5  * BCE(dec(w_t), next-keyframe patches)      <- R1
+#        + 0.05 * SIGReg(w_t)                                <- R1
+#        + 0.1  * (1 - cos(pred(penult), w_{t+1}))           <- R2, target NOT detached
+#        + 0.05 * SIGReg(penultimate)                        <- R2, the "other side"
+#
+# WHY k = 1 (h13_future_k), NOT 16. The literal lambda=1.0 s3 k-sweep is monotone increasing in k and
+# reads as a damage curve (a larger k is a weaker constraint, hence less harm) rather than as evidence
+# about horizon. At the PINNED lambda=0.1 the winner is k=1 (58.2 vs 57.4 at k=16) and the dnw8 combo
+# agrees. k=1 also makes the campaign's reading (b) exact: `pi05_stage_s3_jw01_finetune.yaml` is the
+# same lambda AND the same k with a FROZEN precomputed target and scored 58.2, so R2 - 58.2 isolates
+# live-vs-frozen targets and nothing else. Choosing 16 would confound that contrast with a horizon
+# change. (Recorded as Phase-0 amendment (a) in aug_12/h13_joint_wsm_tree.md.)
+#
+# WHAT "t+1" MEANS. Exactly what it meant for s3: the first STRIDE-8 grid index strictly after the
+# sampled native frame (i.e. native t+8), clamped to the last grid index with valid=False on the
+# terminal tail. The loader reconstructs that grid arithmetically from the episode length, so no
+# omega cache is needed — only one extra video read per sample.
+#
+# COST. R2 adds a second SigLIP pass (3 views, vision tower only — the LLM is never run on the future
+# frame) plus one extra video decode per sample in the worker. The canary's throughput gate is the
+# place this is decided: within ~25% of the 485 ms/step anchor is a pass, > 35% slower means profile
+# before the full run.
+#
+# Everything else — init, labels, target50 T30 data, full-finetune surface, optimizer, 60k schedule,
+# stripped vanilla serve — is identical to R1.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_h13_dec_jepa
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- H13 live/joint WSM (identical to R1) ---
+  h13: true
+  h13_w_dim: 512
+  h13_enc_layers: 4
+  h13_enc_heads: 8
+  h13_dec_weight: 0.5
+  h13_sigreg_weight: 0.05
+  # --- the one factor R2 adds ---
+  h13_jepa: true
+  h13_jepa_weight: 0.1
+  h13_future_k: 1
+  h13_future_stride: 8
+  labels_s3: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/wsm_labels
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_h13_dec_jepa
+  output_dir: ckpts/vla_base/pi05_stage_h13_dec_jepa_finetune
+
+eval: null

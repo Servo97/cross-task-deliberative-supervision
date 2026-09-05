@@ -1,0 +1,84 @@
+# Stage-S3 pi0.5 SALIENT recipe — "deliberative supervision": train-time-only aux, NOTHING at inference.
+#
+# Selected through finetune_pi_05_with_workspace.py --interface jepa, so it inherits the S3 arm's
+# entire interface (same penultimate tap, same train-only contract, same omega staging + manifest
+# validation, same mutual-exclusion checks). The ONE difference from pi05_stage_s3_jepa_finetune.yaml
+# is WHICH aux rides that seam: lambda_jepa and lambda_sigreg are set to 0.0, and in their place a
+# 192-dim multi-hot BCE asks the action expert's penultimate to name WHICH image patches (3 views x
+# 8x8 grid) a frozen VLM labelled salient at the NEXT keyframe. Init loss is ~ln(2) per element and
+# every reduction is a mean, so the aux is O(1) and sample-count invariant by construction — the s3
+# collapse's bug class cannot recur here. Init, target50 T30 data, full-finetune surface, optimizer,
+# and 60k schedule are identical to S0/S1/S2/S3. Eval is byte-identical to S0 (no conditioner, no
+# extra inputs; wsm_salient_head and the zero-weighted wsm_jepa_head are unused at inference and are
+# dropped by serve's remove_extra_params intersection).
+#
+# The omega staging is INERT but RETAINED: with both jepa lambdas at 0.0 the omega targets contribute
+# exactly nothing to the loss, and the cache is still synced and manifest-checked so this arm's s3
+# interface, provenance chain, and launcher arguments are unchanged from the jepa arm it ablates
+# against. That is the point — one variable moves.
+#
+# PROVENANCE CAVEAT: the salient labels are the INHERITED 2026-07-22 wsm_labels generation. They are
+# NOT content-addressed in the study store (no sha256 manifest, no encoder_id), unlike the omega
+# cache and the task-prompt table. What is pinned instead is the prefix and the file count recorded
+# here, plus the [pi-salient] log line the trainer emits at build time:
+#   labels_s3   s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/wsm_labels
+#   geometry    pi (vlm_episode_pi_*.npz only; the un-suffixed siblings are the GR00T geometry)
+#   files       7500 = 50 tasks x 150 episodes, ~22 MB total
+#   episode ids VERIFIED to match the omega cache's demo_<ep> ids exactly (all 50 tasks, all 7500
+#               episodes; the ids are sparse, e.g. 1, 2, 14, 15, 17, ... — not 0..149)
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s3_salient
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # The jepa aux this arm replaces, held at exactly zero. Both terms are still CONSTRUCTED (the arm
+  # rides the jepa interface); at weight 0.0 they contribute nothing to the loss or its gradient.
+  jepa_weight: 0.0
+  sigreg_weight: 0.0
+  # The deliberative-supervision aux itself.
+  salient: true
+  salient_weight: 1.0
+  labels_s3: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/wsm_labels
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s3_salient
+  output_dir: ckpts/vla_base/pi05_stage_s3_salient_finetune
+
+eval: null

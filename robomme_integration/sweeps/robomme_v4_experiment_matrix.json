@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "name": "robomme-v4-fast-evidence-matrix",
+  "cloud_action": false,
+  "protocol": {
+    "identity": "robomme_v4",
+    "seed_screen": 0,
+    "single_task_steps": 20000,
+    "multitask_steps": 60000,
+    "warmup_fraction": 0.05,
+    "ema_decay": 0.999,
+    "optimizer": {
+      "name": "AdamW",
+      "backbone_peak_lr": 0.00005,
+      "new_module_peak_lr": 0.0003,
+      "weight_decay": 0.000001,
+      "global_clip_norm": 10.0
+    },
+    "cfg_train_dropout": 0.2,
+    "cfg_eval_scales": [0.5, 1.0, 1.5, 2.0],
+    "gdn_history_dropout": [0.0, 0.2],
+    "jepa": {
+      "weight": 0.1,
+      "futures": 1,
+      "regularizer": "visreg",
+      "visreg_weight": 0.05,
+      "visreg_slices": 128,
+      "visreg_components": {"scale": 1.0, "shape": 1.0, "center": 1.0}
+    }
+  },
+  "implemented_arms": [
+    "v4_s0",
+    "v4_q0",
+    "v4_q2",
+    "v4_wsm_tanh",
+    "v4_wsm_cfg",
+    "v4_wsm_gdn8_drop00",
+    "v4_wsm_gdn8_drop02",
+    "v4_wsm_gdn16_drop00",
+    "v4_wsm_gdn16_drop02",
+    "v4_jepa_visreg_l01_k1",
+    "v4_gdn8_jepa_visreg_l01_k1",
+    "v4_cfg_jepa_visreg_l01_k1",
+    "v4_ptrm"
+  ],
+  "arm_sets": {
+    "phase_a_coverage": [
+      "v4_s0",
+      "v4_q0",
+      "v4_q2",
+      "v4_wsm_tanh",
+      "v4_wsm_cfg",
+      "v4_wsm_gdn8_drop00",
+      "v4_wsm_gdn8_drop02",
+      "v4_wsm_gdn16_drop00",
+      "v4_wsm_gdn16_drop02",
+      "v4_jepa_visreg_l01_k1",
+      "v4_gdn8_jepa_visreg_l01_k1",
+      "v4_cfg_jepa_visreg_l01_k1",
+      "v4_ptrm"
+    ],
+    "multitask_core": [
+      "v4_s0",
+      "v4_q0",
+      "v4_q2",
+      "v4_wsm_tanh",
+      "v4_wsm_cfg",
+      "v4_wsm_gdn8_drop00",
+      "v4_gdn8_jepa_visreg_l01_k1",
+      "v4_ptrm"
+    ],
+    "phase_b_controls": ["v4_s0"]
+  },
+  "phases": {
+    "phase_a_two_task_screen": {
+      "scope": "single_task",
+      "tasks": ["PickXtimes", "MoveCube"],
+      "arm_set": "phase_a_coverage",
+      "readiness": "workspace_artifacts_may_be_required"
+    },
+    "phase_b_eight_task_panel": {
+      "scope": "single_task",
+      "tasks": [
+        "StopCube",
+        "ButtonUnmaskSwap",
+        "VideoUnmaskSwap",
+        "PickHighlight",
+        "VideoRepick",
+        "PatternLock"
+      ],
+      "arm_set": "phase_b_controls",
+      "promoted_slots": 3,
+      "promotion_source": "phase_a_two_task_screen",
+      "readiness": "blocked_until_phase_a_promotion"
+    },
+    "all16_multitask": {
+      "scope": "multitask",
+      "tasks": ["all16"],
+      "arm_set": "multitask_core",
+      "readiness": "sealed_all16_workspace_index_required_for_workspace_arms"
+    }
+  },
+  "blocked_methods": [
+    {"method": "t1_naive_ttt", "readiness": "blocked", "reason": "common_pipeline_port_required"},
+    {"method": "r1_paper_robottt", "readiness": "blocked", "reason": "implementation_required"},
+    {"method": "framesamp", "readiness": "blocked", "reason": "common_project_eval_arm_required"},
+    {"method": "framesamp_plus_wsm", "readiness": "blocked", "reason": "composition_required"}
+  ]
+}

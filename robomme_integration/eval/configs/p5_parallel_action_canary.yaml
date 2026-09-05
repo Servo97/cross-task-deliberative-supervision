@@ -1,0 +1,18 @@
+server:
+  url: "ws://127.0.0.1:18100"
+  timeout: 1200
+
+output_dir: "./results/p5_parallel_action_preflight"
+
+benchmarks:
+  - benchmark: "robomme_integration.eval.benchmark:RoboMMEOfficialHistoryBenchmark"
+    subname: counting-pickxtimes-p5-parallel-action-preflight
+    episodes_per_task: 4
+    max_steps: 1
+    params:
+      tasks: [PickXtimes]
+      action_space: joint_angle
+      dataset: test
+      send_wrist_image: true
+      send_state: true
+      send_video_history: true

@@ -1,0 +1,80 @@
+# Stage-S S5 COMBO arm (arm label stays s1 / interface tanh): the best-of-axis stack.
+#
+# = pi05_stage_s1_deltanet_finetune.yaml (gated-DeltaNet steering conditioner, cond_window 8)
+# + pi05_stage_s3_jw01_finetune.yaml's aux (lambda_jepa 0.1, SigReg 0.05, k=1), in ONE run.
+#
+# Until now these were mutually exclusive interfaces: s1 conditions the action expert at inference,
+# s3 is a train-only aux target with a base serve path. They are exclusive by bookkeeping, not by
+# mechanism — the deltanet read is an ADDITIVE vector on adarms_cond and the JEPA aux is a separate
+# loss term off the action-expert penultimate, so they touch disjoint tensors and both consume omega
+# futures from the SAME per-episode feature files. `jepa_aux: true` is the recipe-level opt-in that
+# relaxes the exclusion for exactly this pair (finetune_pi_05_with_workspace.py exports WSM_JEPA,
+# WSM_JEPA_TARGETS and WSM_JEPA_WITH_WINDOW before openpi is imported, so the dataloader ships
+# wsm_w_window AND wsm_w_target from one cached demo).
+#
+# SERVE: unchanged from the deltanet arm. The aux is train-time only and its `wsm_jepa_head` subtree
+# is dropped by BaseModel.load(remove_extra_params=True), so serve_pi_05_wsm_cfg's pos_decay_bias
+# auto-detect still selects the gated-DeltaNet conditioner at window 8. No eval-side flags change.
+#
+# SEALED-TABLE COMPARABILITY: data.norm_split_nav is deliberately ABSENT (=> false). This arm
+# completes the sealed RoboCasa table, whose every row was trained against the old merged norm-stat
+# blob; flipping the nav split here would make the row incomparable to its own controls.
+#
+# LAUNCH: --arm s1 --config-override scripts/configs/train/pi05_stage_s1_gdnjepa_finetune.yaml
+# (the launcher reads model.cond_window -> WSM_K_WINDOW=8 + manifest.training.workspace_window, and
+# model.jepa_aux -> manifest.training.jepa_aux).
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s1_gdnjepa
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- axis 1: the s1 gated-DeltaNet steering conditioner (byte-identical to the deltanet arm) ---
+  cond_type: gated_deltanet
+  cond_window: 8
+  # --- axis 2: the s3-jw01 aux, reused exactly (only jepa_weight departs from the s3 defaults) ---
+  jepa_aux: true              # opt-in: carry the train-only aux ALONGSIDE the tanh-interface read
+  jepa_weight: 0.1            # lambda on the (1-cos) prediction term (s3 default 1.0)
+                              # sigreg_weight stays 0.05 and jepa_num_futures stays 1 (the defaults)
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s1_gdnjepa
+  output_dir: ckpts/vla_base/pi05_stage_s1_gdnjepa_finetune
+
+eval: null

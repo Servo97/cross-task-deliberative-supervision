@@ -1,0 +1,178 @@
+<title>H14 World Model</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f2f4f7; --panel:#ffffff; --ink:#1a222c; --muted:#5b6774; --rule:#d5dbe3;
+  --accent:#0e6f66; --accent-ink:#ffffff;
+  --ok:#2c7a4b; --ok-bg:#e3f1e8; --open:#9a6a12; --open-bg:#f7ecd4; --neg:#9c3b3b; --neg-bg:#f6e2e2;
+  --idle:#5b6774; --idle-bg:#e6eaef; --run:#245b9e; --run-bg:#deebf9;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161c; --panel:#191f27; --ink:#e4e9ef; --muted:#9aa6b4; --rule:#2c3541;
+    --accent:#4fb3a6; --accent-ink:#0b1210;
+    --ok:#6fcf97; --ok-bg:#1c3326; --open:#e2b25a; --open-bg:#3a2e14; --neg:#e07a7a; --neg-bg:#3a1f1f;
+    --idle:#9aa6b4; --idle-bg:#242c36; --run:#7fb3ea; --run-bg:#1c2c40;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161c; --panel:#191f27; --ink:#e4e9ef; --muted:#9aa6b4; --rule:#2c3541;
+  --accent:#4fb3a6; --accent-ink:#0b1210;
+  --ok:#6fcf97; --ok-bg:#1c3326; --open:#e2b25a; --open-bg:#3a2e14; --neg:#e07a7a; --neg-bg:#3a1f1f;
+  --idle:#9aa6b4; --idle-bg:#242c36; --run:#7fb3ea; --run-bg:#1c2c40;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+main{max-width:1080px;margin:0 auto;padding:28px 20px 64px;display:grid;gap:28px}
+header{display:grid;gap:6px;border-bottom:1px solid var(--rule);padding-bottom:18px}
+h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0 0 10px;text-wrap:balance}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.lede{max-width:68ch;color:var(--muted);margin:0}
+.notice{background:var(--open-bg);color:var(--open);border:1px solid var(--rule);border-radius:6px;padding:10px 14px;max-width:78ch}
+section{display:grid;gap:10px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;display:grid;gap:2px}
+.tile b{font-family:var(--mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--rule)}
+thead th{border-top:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:transparent}
+td.id,code,.mono{font-family:var(--mono);font-size:12.5px}
+code{background:var(--idle-bg);padding:1px 5px;border-radius:3px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.ok{color:var(--ok);background:var(--ok-bg)} .open{color:var(--open);background:var(--open-bg)}
+.neg{color:var(--neg);background:var(--neg-bg)} .idle{color:var(--idle);background:var(--idle-bg)} .run{color:var(--run);background:var(--run-bg)}
+details{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:0 14px}
+details+details{margin-top:8px}
+summary{cursor:pointer;padding:11px 0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+summary .id{font-family:var(--mono);font-size:12.5px;color:var(--accent);min-width:56px}
+summary .name{font-weight:600}
+summary .pill{margin-left:auto}
+details .body{padding:0 0 14px;color:var(--ink);display:grid;gap:8px;max-width:78ch}
+details .body p{margin:0}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.chain .step{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:5px 9px}
+.chain .step.now{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chain .arrow{color:var(--muted)}
+ol.next{margin:0;padding-left:22px;display:grid;gap:6px;max-width:78ch}
+ol.next li::marker{font-family:var(--mono);color:var(--accent)}
+.foot{font-size:12.5px;color:var(--muted);max-width:78ch}
+a{color:var(--accent)}
+@media (max-width:720px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))} h1{font-size:28px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Research world model · cross-task deliberative workspace supervision</div>
+  <h1>H14 World Model</h1>
+  <p class="lede">Hypothesis tree, sealed evidence, and the live experiment board. Maintained from <code>internal_planning_and_todos/rwm/</code> in <code>Servo97/cross-task-deliberative-supervision</code>; numbers carry their protocol and n in the node files.</p>
+  <div class="stamp">as of 2026-09-05 01:40 UTC · authority: rwm/README.md · rwm/board.md</div>
+</header>
+
+<section>
+  <div class="notice"><b>Hand-off 2026-09-04.</b> TRI AWS access (SageMaker Batch, S3) ended. The project continues from the GitHub repo and local data; both in-flight cluster jobs landed before the cutoff and every artifact was salvaged to local disk (<code>wsm_data/s3_salvage/</code>). Onboarding: <a href="https://claude.ai/claude-code/onboard/ERF-5GZUZKMB">mentee guide</a>.</div>
+</section>
+
+<section>
+  <div class="tiles">
+    <div class="tile"><b>13</b><span>hypothesis nodes</span></div>
+    <div class="tile"><b>4 / 6</b><span>confirmed · open</span></div>
+    <div class="tile"><b>3 / 3</b><span>base curves trained · 0 evaluated</span></div>
+    <div class="tile"><b>0</b><span>policy-level results yet</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Board at hand-off</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>item</th><th>what it produces</th><th>status</th><th>where it lives now</th></tr></thead>
+    <tbody>
+      <tr><td class="id">rmb base-60k s0-6ab9621b…</td><td>ReMemBench base maturity curve, milestones 15k/30k/45k/59999</td><td><span class="pill ok">TRAINED</span> · evals not run (local lane lost CUDA)</td><td>all four milestones local: <code>wsm_data/wsmv2_scratch/rmb60k/ckpt/</code></td></tr>
+      <tr><td class="id">rmme M0-70k 28d80fb9…</td><td>RoboMME base curve, 7 milestones (recipe v4_70k)</td><td><span class="pill ok">TRAINED</span> · milestone evals never fired (preflight blocked by the launcher's backlog guard)</td><td>all 7 milestones local: <code>wsm_data/s3_salvage/…/mt-v4-70k-…-28d80fb948f834df/deploy/</code></td></tr>
+      <tr><td class="id">rcb base-60k a7cf2047…</td><td>RoboCerebra base curve, 60k, 48 h class</td><td><span class="pill ok">TRAINED 09-05 00:08</span> · evals not run</td><td>milestones pulled to <code>wsm_data/s3_salvage/…/robocerebra/checkpoints/pi05/a0_base/</code></td></tr>
+      <tr><td class="id">Stage-E #3 772597789979f88a</td><td>Encoder retrain, 10 serve-consistent cells on labels <code>91461e8df6f2d143</code></td><td><span class="pill ok">LANDED 09-05 01:05</span> all 10 cells; E1b 30–39× vs ctrl-0b 0.6–6.7× (3/3 seeds); only E1b s28 <code>109e99680ca5c198</code> passes G1b on every tap; E1b-4tap fails the robocasa eff-rank bar (status §56)</td><td>encoders + ω stores local: <code>wsm_data/s3_salvage/…/stage_e/772597789979f88a/</code></td></tr>
+      <tr><td class="id">&lt;V2C&gt; labels 91461e8d…</td><td>Union label chain, 28,722 segments, four domains, 261k typed edges</td><td><span class="pill ok">SEALED</span></td><td><code>wsm_data/deliberation/stage_e_labels/</code></td></tr>
+      <tr><td class="id">tap stores × 4</td><td>frozen π0.5 ω stores (RoboCasa, ReMemBench, RoboMME, RoboCerebra)</td><td><span class="pill ok">COMPLETE</span> RoboMME eff-rank 7.82 → bar 6.26 / 7.70</td><td><code>wsm_data/wsm_pooled/</code>, <code>s3_salvage/</code></td></tr>
+      <tr><td class="id">local box</td><td>2 × RTX 5090</td><td><span class="pill neg">GPU1 HARDWARE-FLAKY</span> drops off the bus under load, then CUDA dies box-wide until reboot</td><td>use GPU0 only, <code>JAX_PLATFORMS=cuda</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="chain">
+    <span class="step">&lt;V2C&gt; labels</span><span class="arrow">→</span>
+    <span class="step">Stage-E cells (landed)</span><span class="arrow">→</span>
+    <span class="step now">D7 parity</span><span class="arrow">→</span>
+    <span class="step">ω arms: rmb P′ · rcb R · RoboMME M (needs multi-GPU compute)</span><span class="arrow">→</span>
+    <span class="step">milestone evals</span><span class="arrow">→</span>
+    <span class="step">readings</span>
+  </div>
+</section>
+
+<section>
+  <h2>Hypothesis tree</h2>
+  <details open>
+    <summary><span class="id">H14</span><span class="name">Markovianization via cross-task deliberative supervision</span><span class="pill open">OPEN · policy level</span></summary>
+    <div class="body">
+      <p>Weakest claim the evidence forces: deliberatively mined cross-task pairings make ω retrieve functionally matching moments across tasks far above chance, and the typed structure is what produces it. Offline metric only; no memory-content or policy claim entailed.</p>
+      <p>Encoder stage sealed 2026-08-31. Every policy arm below is the arbiter of the stronger claim.</p>
+    </div>
+  </details>
+  <details><summary><span class="id">H14.1</span><span class="name">Structure, not a contrastive term, produces retrieval (C2)</span><span class="pill ok">CONFIRMED · offline</span></summary>
+    <div class="body"><p>E1b 16.25× chance vs ctrl-0b 0.97× (chance), ctrl-S 1.13×, ctrl-T 0.20×; E1b − ctrl-0b +0.089, 3/3 seeds. Seed spread ≈5 lift units is the error statement.</p></div></details>
+  <details><summary><span class="id">H14.2</span><span class="name">Deliberation-mined positives beat embedding positives</span><span class="pill ok">CONFIRMED · offline</span></summary>
+    <div class="body"><p>+0.062 on the pre-registered statistic, 3/3 seeds, single-domain and confound-free (11.83× vs 4.03×); corroborated +0.049 in the two-domain corpus.</p></div></details>
+  <details><summary><span class="id">H14.3</span><span class="name">Mixing domains improves the encoder</span><span class="pill neg">REFUSED</span></summary>
+    <div class="body"><p>Like-for-like Δ −0.012 with mixed signs; the pre-registered whole-gate statistic was an artifact (gate population changed). ≈39 seeds per arm to resolve — not worth it.</p></div></details>
+  <details><summary><span class="id">H14.4</span><span class="name">ω carries memory content a history read can use</span><span class="pill neg">CLOSED-NEGATIVE</span></summary>
+    <div class="body"><p>Bound slots and hidden sides are perception (decodable from the raw frame tap). Progress state: 0/8 families beat a time-only clock under pooled-linear and GRU-64 probes. H_absent survives; next cell E3 (event-marked ω) designed, not run.</p></div></details>
+  <details><summary><span class="id">H14.5</span><span class="name">Policy-level gain (C1) and memory-stratified concentration (C3)</span><span class="pill open">OPEN</span></summary>
+    <div class="body"><p>No evidence for or against. First attempt (rmb P1/P2/P3) retired non-evaluable under the serve-consistency rule. Arms: ReMemBench P1′/P2′/P3′ (MDE 7.4 pp), RoboCerebra R1/R2 (≈4 pp), RoboMME M1/M2/M3/M3-ctrl (5 pp). Interference rule: any arm &gt;5 pp below its anchor is a finding. Blocked on multi-GPU compute after the TRI hand-off.</p></div></details>
+  <details><summary><span class="id">H14.6</span><span class="name">Low-data benchmarks gain most (user)</span><span class="pill open">OPEN</span></summary>
+    <div class="body"><p>Comparator: RoboCerebra H12 null on the memory stratum — a positive there is the headline. ReMemBench per-domain ω already beats base (36.8/38.2 vs 31.3), so the question there is additivity.</p></div></details>
+  <details><summary><span class="id">H14.7</span><span class="name">RoboMME: demo-prefix ω + live ω → GDN reproduces FrameSamp+Modul gains (user)</span><span class="pill open">OPEN</span></summary>
+    <div class="body"><p>[8 demo ω ; 16 live ω] window, K=24. Base anchor 17.875 % vs teacher 46.00 %. Two pre-GPU defects fixed: serve-aligned store grid; decay-init −4.0 on all arms (zero-init erased the prefix below the fp16 floor). Tap + tapserve stores complete.</p></div></details>
+  <details><summary><span class="id">H14.8</span><span class="name">Max-effort judging gives better labels (user)</span><span class="pill idle">PARKED</span></summary>
+    <div class="body"><p>Pre-registered rule A17. Both pilots failed on harness defects (no measurement). Parked at low effort; re-pilot only if label quality becomes the binding constraint.</p></div></details>
+  <details><summary><span class="id">H14.9</span><span class="name">Train to saturation; select checkpoints by the evaluated curve (user)</span><span class="pill open">OPEN · 2 of 3 base curves trained, 0 evaluated</span></summary>
+    <div class="body"><p>RoboMME 70k (7 milestones, salvaged), ReMemBench 60k (4 milestones, local), RoboCerebra 60k (lost in flight). Step chosen on the base curve, applied to every arm. Prior: RoboCerebra 15k ≈ 30k ≈ 45k within ≈1.4 pp (MDE ≈4 pp). First local job: the ReMemBench base curve, one GPU, ≈5.4 h per milestone.</p></div></details>
+  <details><summary><span class="id">H14.10</span><span class="name">K-token workspace &gt; 1-token at fixed signal (C4)</span><span class="pill idle">NOT STARTED</span></summary>
+    <div class="body"><p>Gated on H14.5.</p></div></details>
+  <details><summary><span class="id">H14.11</span><span class="name">Serve-consistency constraint</span><span class="pill ok">CONFIRMED failure mode → rule</span></summary>
+    <div class="body"><p>Train-time conditioning must be a statistic the server computes causally at rollout. Side finding: structure-free ω is prompt-dominated; deliberative ω is vision-grounded (54–58 % vs 27 %).</p></div></details>
+  <details><summary><span class="id">H14.12</span><span class="name">Label quality is measured, not assumed</span><span class="pill ok">CONFIRMED · handled</span></summary>
+    <div class="body"><p>EQUIVALENT precision 0.933 [0.841, 0.974]; CONTRAST weak (0.17) → deterministic binding table at 0.94 precision; planted-probe recovery 0.867 with the union.</p></div></details>
+</section>
+
+<section>
+  <h2>Anchors every arm is measured against</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>benchmark</th><th>protocol</th><th>comparator</th><th>value</th></tr></thead>
+    <tbody>
+      <tr><td>RoboMME</td><td>fixed-800, h20/e16, seed 7</td><td>our base v4_s0 (E0 anchor)</td><td class="num">143/800 = 17.875 % [15.38, 20.68]</td></tr>
+      <tr><td>RoboMME</td><td>same</td><td>released π0.5 · FrameSamp+Modul teacher</td><td class="num">19.125 % · 46.00 %</td></tr>
+      <tr><td>ReMemBench</td><td>264 rollouts (88 × 3), 13 Mem tasks</td><td>base · dnw8 · dropout-w16</td><td class="num">31.3 · 36.8 · 38.2 %</td></tr>
+      <tr><td>RoboCerebra</td><td>protocol v3, 800 trials, subtask completion</td><td>H12 table (per-domain ω)</td><td>no arm beats base on the memory stratum</td></tr>
+      <tr><td>RoboCerebra budget</td><td>v3 CRN curve, Ideal 10×10</td><td>15k · 30k · 45k</td><td class="num">32.63 · 31.05 · 31.84 %</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Next actions (for whoever picks this up)</h2>
+  <ol class="next">
+    <li>Reboot the local box; run GPU0-only with <code>JAX_PLATFORMS=cuda</code>. Evaluate the four ReMemBench base milestones (<code>rwm/todos/T-maturity.md</code>) → the first evaluated maturity curve.</li>
+    <li>Retrain Stage-E cells locally (E1b / ctrl-0b / ctrl-Eb, seeds 20260828–30, plus the two 4-tap cells) on the four tap stores + <code>&lt;V2C&gt;</code>; read the retrieval gates; D7 stored-mode parity on every exported ω store.</li>
+    <li>Port one node entry (<code>robocerebra_stage_entry.sh</code> or the ReMemBench Stage-S launcher) to plain <code>torchrun</code>/slurm on whatever multi-GPU cluster is available; π0.5 post-training does not fit one 5090.</li>
+    <li>Then the ω arms in the pre-registered order: ReMemBench P1′/P2′ pair first (needs the serve-side ω consumer), RoboCerebra R1/R2, RoboMME M-arms.</li>
+    <li>Cheap, CPU-only side study if someone wants a first result: kinematic-DTW (RoboTok-style) baseline vs the deliberation labels on the 28,722 sealed segments (<code>rwm/board.md</code>, RoboTok note).</li>
+  </ol>
+  <p class="foot">Deferred with fallbacks: paper-protocol RoboMME eval lane (local runner ≈1.5 h per 800 episodes); serve-side ω consumer for ReMemBench evals (must exist before any P′ eval); E3 event-marked ω.</p>
+</section>
+</main>

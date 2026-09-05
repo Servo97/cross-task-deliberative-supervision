@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "name": "robomme-local5090-ready9-fixed50-v1",
+  "jobs": [
+    {
+      "task": "PickXtimes",
+      "arm": "a6",
+      "run_id": "st-v1-pickxtimes-a6-seed0-70cde0432cbd2775",
+      "manifest_sha256": "c8e2025aa778a2ac43828fe9b156e91711766bba787067e178cfb5876d23e409",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/PickXtimes/a6/seed0/st-v1-pickxtimes-a6-seed0-70cde0432cbd2775"
+    },
+    {
+      "task": "StopCube",
+      "arm": "s0",
+      "run_id": "st-v1-stopcube-s0-seed0-48def842c1a66e9b",
+      "manifest_sha256": "b800e6a986f0c08a81f6bb371f19e55f413d40a52b00b2794e0ce99306dba013",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/StopCube/s0/seed0/st-v1-stopcube-s0-seed0-48def842c1a66e9b"
+    },
+    {
+      "task": "StopCube",
+      "arm": "q0",
+      "run_id": "st-v1-stopcube-q0-seed0-bfe92ed1513b5490",
+      "manifest_sha256": "38d1f9a1a62f2ff3544e0e1780e0162ebd1dec23f75b193257e199db377794d0",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/StopCube/q0/seed0/st-v1-stopcube-q0-seed0-bfe92ed1513b5490"
+    },
+    {
+      "task": "StopCube",
+      "arm": "a6",
+      "run_id": "st-v1-stopcube-a6-seed0-196a02f69ef953c7",
+      "manifest_sha256": "34ebdef5eea568ddb262d7819601bf8df862c39ea58b14dfcc5c3f8de4c87613",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/StopCube/a6/seed0/st-v1-stopcube-a6-seed0-196a02f69ef953c7"
+    },
+    {
+      "task": "StopCube",
+      "arm": "q2",
+      "run_id": "st-v1-stopcube-q2-seed0-9b7b11378131a7f4",
+      "manifest_sha256": "7a2b053e8a7840ece46cd0263765bc1128ee71832dbae8cb478ee2e21ed00aef",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/StopCube/q2/seed0/st-v1-stopcube-q2-seed0-9b7b11378131a7f4"
+    },
+    {
+      "task": "ButtonUnmaskSwap",
+      "arm": "q0",
+      "run_id": "st-v1-buttonunmaskswap-q0-seed0-9d2ce5f7833df04d",
+      "manifest_sha256": "d3c7a23209768a6b02fd109be1129b58ae388a79c8abccdb6e2524d2593eb87c",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/ButtonUnmaskSwap/q0/seed0/st-v1-buttonunmaskswap-q0-seed0-9d2ce5f7833df04d"
+    },
+    {
+      "task": "ButtonUnmaskSwap",
+      "arm": "a6",
+      "run_id": "st-v1-buttonunmaskswap-a6-seed0-0a060b9dddb8e467",
+      "manifest_sha256": "6a815cee85ed150f32e191caa22d4f5b6e4c3ab970ac6db430cf7a341d33b009",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/ButtonUnmaskSwap/a6/seed0/st-v1-buttonunmaskswap-a6-seed0-0a060b9dddb8e467"
+    },
+    {
+      "task": "ButtonUnmaskSwap",
+      "arm": "q2",
+      "run_id": "st-v1-buttonunmaskswap-q2-seed0-8bdbc2d1329a07e7",
+      "manifest_sha256": "f5e72241f4dc3752272a2916ca3efaaa46e1cbfb648a6d871f6bc79c7894794f",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/ButtonUnmaskSwap/q2/seed0/st-v1-buttonunmaskswap-q2-seed0-8bdbc2d1329a07e7"
+    },
+    {
+      "task": "VideoUnmaskSwap",
+      "arm": "s0",
+      "run_id": "st-v1-videounmaskswap-s0-seed0-50323a3420fdb47a",
+      "manifest_sha256": "34678b7a906c4683f6cc5625ce5ebbbefa44dd83a04d99320443f80ffdcc6658",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoUnmaskSwap/s0/seed0/st-v1-videounmaskswap-s0-seed0-50323a3420fdb47a"
+    }
+  ]
+}

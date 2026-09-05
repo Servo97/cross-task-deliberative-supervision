@@ -1,0 +1,86 @@
+[project]
+name = "wsmv2"
+version = "0.1.0"
+description = "Workspace Model v2 — workspace-model training on VLA backbones (GR00T N1.7, pi-0.5) over RoboCasa365"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tyro>=0.8",
+    "tqdm>=4.66",
+    "boto3>=1.34",          # SageMaker Batch launches
+    "msgpack>=1.0",
+    "msgpack-numpy>=0.4.8",
+    "imageio[ffmpeg]>=2.34",
+]
+
+# Backbones have INCOMPATIBLE core pins (GR00T=torch/transformers<4.58/hub<1.0,
+# pi-0.5=jax). Each extra is installed into its OWN venv via install.sh; never together.
+[project.optional-dependencies]
+groot = [
+    "torch>=2.5",
+    "torchvision>=0.20",
+    "transformers>=4.57,<4.58",
+    "huggingface-hub>=0.34,<1.0",   # gr00t (transformers) hard-requires <1.0
+    "diffusers>=0.31",
+    "albumentations>=1.4",
+    "accelerate>=1.0",
+    "av>=12.3",
+]
+pi05 = [
+    "jax[cuda12]>=0.10.1",
+    "flax>=0.12.7",
+    "orbax-checkpoint>=0.12.0",
+    "optax>=0.2.3",
+    "fsspec[gcs]>=2024.6.0",        # gs:// base-checkpoint download
+    "numpy==2.2.5",                 # robocasa asserts this exact pin
+]
+wsm = [
+    "torch>=2.5",
+    "einops>=0.8",
+    # 3D-flow (DynaFLIP) tools are git installs — see install.sh:
+    #   cotracker3 / vggt / tapip3d / spatialtracker-v2
+]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+]
+
+[tool.ruff]
+line-length = 119
+target-version = "py310"
+# Out-of-repo or frozen trees (see .gitignore and the H14 caption_segments edit freeze).
+extend-exclude = ["gcp_tpu", "figures", "overleaf", "temp_launch_training.py", "internal_planning_and_todos/_archive"]
+
+[tool.ruff.lint]
+extend-select = ["I"]   # import sorting
+# F722: jaxtyping shape strings such as Float[Array, "b n d"] are not forward references.
+ignore = ["F722"]
+
+[tool.ruff.lint.per-file-ignores]
+# sys.path shims before imports are deliberate in tests and fixtures.
+"tests/**" = ["E402"]
+"scripts/robocerebra/test_v3_scoring.py" = ["E402"]
+
+[tool.pytest.ini_options]
+# Keep generated handoff/export copies from being recursively collected as duplicate test modules.
+testpaths = ["tests"]
+# The repository root (wsm_settings.py) must be importable under a bare `pytest` as well as `python -m pytest`.
+pythonpath = ["."]
+markers = [
+    "slow: multi-process / long-running (e.g. DDP gloo spawn); deselect with -m 'not slow'",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# utils/ = shared framework-agnostic data plumbing; importable from BOTH the pi05 (jax) and
+# groot (torch) venvs (it imports only numpy + robocasa, never jax/torch).
+packages = ["utils", "vla_training", "workspace_models"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# The root-level settings module ships with the packages (non-editable installs).
+"wsm_settings.py" = "wsm_settings.py"

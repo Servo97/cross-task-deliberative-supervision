@@ -1,0 +1,72 @@
+# Shared Stage-Q pi0.5 sequence recipe (RoboTTT 2x2: Q0/Q1/Q2/Q3).
+#
+# ONE recipe for all four arms. The arm is selected ONLY by finetune_pi_05_seq.py's two flags
+# (--fast-weights, --workspace) which map to Pi0Config.robottt / wsm_tanh via StageQArms. Every other
+# hyperparameter (data, optimizer, steps, batch, TBPTT/window, full-finetune surface, init) is shared
+# by construction, so the 2x2 differs ONLY in the two booleans. Q2 (fast_weights on, workspace off) is
+# vanilla paper-faithful RoboTTT. Stage-Q uses the CONTIGUOUS-EPISODE sequence loader (not the Stage-S
+# per-step loader); config name is deliberately distinct (pi05_robocasa_stage_q).
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_q
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+  # RoboTTT fast-weight geometry (shared across arms; canary axes per 7a). token_dim d, fast_hidden h,
+  # num_registers N=16 (paper), inner base LR 0.1 (App A.1), gate init 1e-3 (Eq 3).
+  robottt:
+    token_dim: 256
+    fast_hidden: 128
+    num_registers: 16
+    base_inner_lr: 0.1
+    gate_init: 0.001
+    window_len: 8      # L: contiguous chunk-steps per training sequence
+    tbptt_segment: 8   # G: gradient truncation segment (G>=L => full BPTT over the window)
+    # native-frame spacing between chunk-steps. 8 = the serve replan stride, so one training
+    # chunk-step == one serve-time commit and the fast-weight cadence matches train->eval
+    # (stride 1 would commit 8x denser at train than serve — audit 2026-07-23).
+    chunk_stride: 8
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  # Stage-Q batch_size counts WINDOWS (each L=8 chunk-steps): 8 windows -> effective per-step pi
+  # batch 64, identical FLOPs/step and samples/step to the S0 recipe's batch 64.
+  batch_size: 8
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_q
+  output_dir: ckpts/vla_base/pi05_stage_q_finetune
+
+eval: null

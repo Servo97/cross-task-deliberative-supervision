@@ -1,0 +1,11 @@
+script: "robomme_integration/eval/execution_model_server.py"
+args:
+  checkpoint: "${oc.env:ROBOMME_CHECKPOINT}"
+  arm: "${oc.env:ROBOMME_ARM}"
+  task_name: "${oc.env:ROBOMME_TASK,PickXtimes}"
+  model_seed: 7
+  chunk_size: 10
+  max_batch_size: 8
+  port: 8000
+server:
+  url: "ws://localhost:8000"

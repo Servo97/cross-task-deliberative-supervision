@@ -1,0 +1,57 @@
+# Stage-S3 combo arm (arm name: s3-jw01k16): jepa_weight 0.1 x jepa_num_futures 16 — the best
+# cell candidate after the 2026-08-02 dose-response results. Weight 0.1 alone (k=1) sealed 58.2
+# (+2.4 over no-aux 55.8); horizon k=16 alone (weight 1.0) sealed 55.8 with the study's best
+# composite_seen 51.1. If the axes compose, this cell should exceed both. Everything else is the
+# s3 recipe unchanged (sigreg 0.05, eval byte-identical to S0).
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s3_jw01k16
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- the one recipe difference vs pi05_stage_s3_jepa_finetune.yaml ---
+  jepa_weight: 0.1            # lambda on the (1-cos) prediction term (s3 default 1.0)
+  jepa_num_futures: 16        # grid rows +1..+16 — the two axes that independently CROSSED
+                              # baseline (jw01 58.2 at k=1; k16 55.8 at weight 1.0), combined.
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s3_jw01k16
+  output_dir: ckpts/vla_base/pi05_stage_s3_jw01k16_finetune
+
+eval: null

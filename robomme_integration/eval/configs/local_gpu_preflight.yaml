@@ -1,0 +1,18 @@
+server:
+  url: "ws://127.0.0.1:8000"
+  timeout: 600
+
+output_dir: "./results/local_gpu_preflight"
+
+benchmarks:
+  - benchmark: "robomme_integration.eval.benchmark:RoboMMEOfficialHistoryBenchmark"
+    subname: imitation-movecube-local-gpu-preflight
+    episodes_per_task: 1
+    max_steps: 1
+    params:
+      tasks: [MoveCube]
+      action_space: joint_angle
+      dataset: test
+      send_wrist_image: true
+      send_state: true
+      send_video_history: true

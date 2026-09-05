@@ -1,0 +1,78 @@
+{
+  "note": "MEASURED from the real Gr00tN1d7Processor + Gr00tN1d7DataCollator, offline. Regenerate with tests/fixtures/extract_groot_seam_dims.py in the gr00t venv.",
+  "processor": {
+    "max_state_dim": 132,
+    "max_action_dim": 132,
+    "max_action_horizon": 40
+  },
+  "model_config": {
+    "max_state_dim": 132,
+    "max_action_dim": 132,
+    "action_horizon": 40,
+    "state_history_length": 1,
+    "input_embedding_dim": 1536
+  },
+  "raw_modality": {
+    "state_channels": 16,
+    "state_timesteps": 1,
+    "action_channels": 12,
+    "action_timesteps": 16
+  },
+  "per_step": {
+    "state": [
+      1,
+      132
+    ],
+    "action": [
+      40,
+      132
+    ],
+    "dtype": "torch.float32"
+  },
+  "collated": {
+    "state": [
+      2,
+      3,
+      1,
+      132
+    ],
+    "action": [
+      2,
+      3,
+      40,
+      132
+    ],
+    "B": 2,
+    "L": 3
+  },
+  "seam": {
+    "state_seq": [
+      2,
+      3,
+      132
+    ],
+    "action_seq": [
+      2,
+      3,
+      40,
+      132
+    ],
+    "state_dim": 132,
+    "action_dim": 132,
+    "action_horizon": 40,
+    "dtype": "torch.float32"
+  },
+  "flat": {
+    "state": [
+      6,
+      1,
+      132
+    ],
+    "action": [
+      6,
+      40,
+      132
+    ]
+  },
+  "cond_dim": 1536
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "robomme-v4-phase-a-move-nonworkspace-lane",
+  "hardware": "p5",
+  "priority": 400,
+  "max_run_seconds": 86400,
+  "volume_size_gb": 400,
+  "attempt_index": 1,
+  "runtime_reserve_seconds": 3600,
+  "minimum_free_bytes": 68719476736,
+  "failure_policy": "continue",
+  "evaluation_mode": "deferred",
+  "cells": [
+    {"task": "MoveCube", "arm": "v4_s0", "estimated_train_seconds": 10800},
+    {"task": "MoveCube", "arm": "v4_q0", "estimated_train_seconds": 12000},
+    {"task": "MoveCube", "arm": "v4_q2", "estimated_train_seconds": 14400}
+  ]
+}

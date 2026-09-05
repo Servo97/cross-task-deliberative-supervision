@@ -1,0 +1,81 @@
+# groot17_wsm_canary_finetune.yaml — Step 2b: WSM-CONDITIONED GR00T N1.7 target finetune (the canary).
+#
+# IDENTICAL to groot17_target_finetune.yaml (same init-from the bal33@150k pretrain, same combined
+# target soup, same seed-0 30% subsample, same freeze projector+DiT, same optim/batch/steps) EXCEPT a
+# zero-init TokenModulator conditions the action head on the precomputed workspace latent w_t. Zero-init
+# => step 0 == the Eval1 baseline, so Eval2-vs-Eval1 (30.5%) is a clean per-category WSM delta.
+#
+# The wsm: block below is provenance; the driver reads WSM_POLICY_FEATS_ROOT / WSM_K_WINDOW / WSM_W_DIM
+# from the env (matching the WSM_* launcher idiom). See finetune_groot_17_with_wsm.py.
+
+regime: vla_base
+backbone: groot_n17
+phase: target_finetune
+
+model:
+  base_model: nvidia/GR00T-N1.7-3B
+  embodiment_tag: NEW_EMBODIMENT
+  action_horizon: 16
+  state_dropout_prob: 0.2
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+  freeze:
+    tune_llm: false
+    tune_visual: false
+    tune_projector: true
+    tune_diffusion_model: true
+  normalization:
+    continuous: min_max
+    gripper_close: binary
+    control_mode: binary
+    state_rotation: rotation_6d
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+  augmentation:
+    video_crop_scale: 0.95
+    resize: 224
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.4
+      saturation: 0.5
+      hue: 0.08
+
+# WSM conditioning (provenance; the driver reads the env vars of the same meaning).
+wsm:
+  enabled: true
+  k_window: 2                 # condition on the last K causal workspace tokens (WSM_K_WINDOW)
+  w_dim: 512                  # WorkspaceEncoder latent dim (WSM_W_DIM)
+  # node path the SageMaker entry syncs the precomputed w_t into (WSM_POLICY_FEATS_ROOT):
+  feats_root: /opt/ml/work/wsm_policy_feats
+  encoder_ckpt: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/wsm_runs/groot_wsm_base/wsm_step65000.pt
+  policy_feats_s3: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/wsm_policy_feats/groot_step65000
+
+optim:
+  lr: 3.0e-5
+  optimizer: adamw
+  betas: [0.95, 0.999]
+  weight_decay: 1.0e-5
+  lr_schedule: cosine
+  warmup_ratio: 0.05
+  dtype: bf16
+
+train:
+  batch_size: 128
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 8          # per DDP rank = 64 workers/node on 8-GPU p5.48xlarge
+  init_from: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/pretrain150k/groot/mg60_bal33/groot-mg60-bal33/checkpoint-150000
+  exp_name: groot17_rc365_wsm_canary
+  output_dir: ckpts/vla_base/groot17_wsm_canary   # LOCAL ONLY (gitignored)
+
+eval: null

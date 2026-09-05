@@ -1,0 +1,50 @@
+# groot17_eval.yaml — GR00T N1.7 base-VLA eval on the RoboCasa365 target protocol.
+# Governed by internal_planning_and_todos/01_robocasa_protocol_and_recipes.md
+#   "The benchmark protocol (official)" + "Task sets" + ported_raw/.../eval_common.py.
+#
+# OFFICIAL RoboCasa eval (doc 01): evaluate the phase-2 target-finetune checkpoint on the
+#   `target` split over atomic_seen (18) / composite_seen (16) / composite_unseen (16) = 50.
+#   Metric = task-weighted average success % (mean over all 50 per-task rates).
+#   composite_unseen is the headline column. Baselines to beat: GR00T N1.5 = 20.0,
+#   pi0.5 = 16.9.
+#
+# Schema (shared across all train/eval configs): model / data / optim / train / eval.
+
+regime: vla_base
+backbone: groot_n17
+phase: eval
+
+model:
+  base_model: nvidia/GR00T-N1.7-3B
+  embodiment_tag: NEW_EMBODIMENT
+  action_horizon: 16
+  # Checkpoint under eval — the phase-2 target-finetune output (edit to your run's path).
+  checkpoint: ckpts/vla_base/groot17_target_finetune/checkpoint-60000
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data: null                   # no training data at eval time
+
+optim: null                  # no optimization at eval time
+
+train: null                  # eval-only config
+
+eval:
+  split: target
+  # Task sets with their verified task counts (doc 01).
+  task_sets:
+    - {name: atomic_seen, num_tasks: 18}
+    - {name: composite_seen, num_tasks: 16}
+    - {name: composite_unseen, num_tasks: 16}   # HEADLINE column
+  num_trials: 10             # quick pass; use 50 for the headline / paper number
+  # Atomic-first execution: snake-shard by descending horizon, EXECUTE shortest-first so
+  # cheap atomic_seen tasks finish early (diagnostic in ~1h). See eval_common.shard_tasks.
+  execution_order: atomic_first
+  exec_steps: 8              # steps of each action chunk to execute per inference
+  metric: task_weighted_avg_success   # mean over all 50 per-task success rates
+  seed: 7
+  video: first               # none | first | all
+  num_workers: 8             # episode-sharded parallelism across workers
+  output_dir: results/vla_base/groot17_eval   # LOCAL ONLY (gitignored)

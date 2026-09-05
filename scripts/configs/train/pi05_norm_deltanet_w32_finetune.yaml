@@ -1,0 +1,78 @@
+# pi05_norm_deltanet_w32_finetune.yaml — n-wave audit discriminator #2 (window-peak relocation).
+#
+# EXACT copy of pi05_norm_s1_deltanet_finetune.yaml (the n-wave deltanet-w8 arm, run
+# s1-d5fe74c301a0f1bc, sealed 56.8) plus ONE change: `model.cond_window: 8 -> 32`, plus the
+# distinguishing config_name/exp_name/output_dir. `data.norm_split_nav: true` is retained — this is
+# a norm-CORRECTED run in the n-wave's sealed protocol lineage.
+#
+# WHY 32. Under the OLD stats the deltanet window curve peaked at 8: w2 57.7 < w16 58.5 < w8 59.9.
+# Under CORRECTED stats the ordering inverts: w8 56.8 < w16 57.9. The old peak was an artifact of
+# the squashed-nav regime, so the corrected two-point curve no longer has a located maximum — it
+# slopes UP toward the long end, and both measured points sit on that slope. w32 is the next
+# doubling and the cheapest probe of where the corrected peak actually is: if the curve keeps
+# rising, w32 > w16 and the peak is at or beyond 32; if it turns over, the peak is bracketed in
+# (8, 32) with w16 the best known cell. Either way the wave stops extrapolating from a curve whose
+# shape was set by a normalization bug.
+#
+# This is the audit's hyperparam-staleness discriminator: every window cell in the study was chosen
+# on old stats, so "the mechanism does not help" and "the mechanism was tuned for the wrong data
+# scaling" are still confounded for deltanet. A w32 that clears the n-baseline 58.2 separates them.
+#
+# WINDOW SEALING. cond_window flows to BOTH the sealed manifest (training.workspace_window) and the
+# job environment (WSM_K_WINDOW), because the dataloader freezes WSM_K_WINDOW at IMPORT and would
+# otherwise ship K=1 rows to a K=32 conditioner; _pi05_common asserts the two agree post-import.
+# The launcher applies no upper cap (only cond_window >= 1), and w32 is already proven on the
+# ReMemBench side, so nothing here needs a new code path — verified by dry-run before submission.
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s1_deltanet_w32_normsplit
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet
+  cond_window: 32               # THE only recipe delta vs the n-wave w8 parent
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  norm_split_nav: true          # retained from the n-wave parent: this is a corrected-stats run
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  # Experimental and deliberately OFF for sealed Stage-S runs: this defers worker-side PIL
+  # resizing to the batched JAX model graph. The implementations differ by up to one uint8 code
+  # on covered camera shapes, so enabling it requires an explicit acceptance/canary decision.
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s1_deltanet_w32_normsplit
+  output_dir: ckpts/vla_base/pi05_stage_s1_deltanet_w32_finetune_normsplit
+
+eval: null

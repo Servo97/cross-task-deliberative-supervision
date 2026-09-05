@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "name": "robomme-p5-priority1-single-task-v1",
+  "hardware": "p5",
+  "priority": 1,
+  "max_run_seconds": 86400,
+  "volume_size_gb": 300,
+  "train_steps": 20000,
+  "seed": 0,
+  "core": {
+    "tasks": [
+      "PickXtimes",
+      "StopCube",
+      "ButtonUnmaskSwap",
+      "VideoUnmaskSwap",
+      "PickHighlight",
+      "VideoRepick",
+      "MoveCube",
+      "PatternLock"
+    ],
+    "arms": ["s0", "q0", "a6", "q2"],
+    "completed_elsewhere": [
+      {
+        "task": "PickXtimes",
+        "arm": "s0",
+        "checkpoint_uri": "gs://maxlab-tpu-wsm-robocasa-us-east1/sarvesh.patil/wsm_robocasa/robomme/single_task_poc/v1/PickXtimes/base_pi05/seed0/attempt1/steps/19999"
+      },
+      {
+        "task": "PickXtimes",
+        "arm": "q0",
+        "checkpoint_uri": "gs://maxlab-tpu-wsm-robocasa-us-east1/sarvesh.patil/wsm_robocasa/robomme/single_task_poc/v1/PickXtimes/q0/seed0/attempt1/steps/19999"
+      },
+      {
+        "task": "PickXtimes",
+        "arm": "q2",
+        "checkpoint_uri": "gs://maxlab-tpu-wsm-robocasa-us-east1/sarvesh.patil/wsm_robocasa/robomme/single_task_poc/v1/PickXtimes/project_robottt/seed0/attempt1/steps/19999"
+      },
+      {
+        "task": "ButtonUnmaskSwap",
+        "arm": "s0",
+        "checkpoint_uri": "gs://maxlab-tpu-wsm-robocasa-us-east1/sarvesh.patil/wsm_robocasa/robomme/single_task_poc/v1/ButtonUnmaskSwap/base_pi05/seed0/attempt1/steps/19999"
+      }
+    ]
+  },
+  "workspace": {
+    "arms": [
+      "q3",
+      "wsm_cfg",
+      "wsm_tanh",
+      "wsm_d8",
+      "jepa_l01_k1",
+      "jepa_l1_k32",
+      "jepa_l01_k16",
+      "salient"
+    ],
+    "tasks": {
+      "PickXtimes": {
+        "encoder_id": "dd5a17e4929537f9b0472f374081618a5dff5deed31af1969324ded291bd9c15",
+        "omega_manifest_file_sha256": "4ea7ca3f9759c4cc435a7c6e754f6a3227ed9f043df780eb851e37a3989a5775",
+        "supervision_manifest_file_sha256": "d3322101b34bf4cd5d68a3d0e37bf8ffe9d2c65f712ae06e620204d8f0bfd016"
+      },
+      "ButtonUnmaskSwap": {
+        "encoder_id": "b9ce5a5c424399b5ede72037eb0dbd139e5a3ad10204c15b48b9cd385e24c4d0",
+        "omega_manifest_file_sha256": "210a436dc55b432e3c7ed892facd041f6b4422b23ad98eac985c8be9da5fd40a",
+        "supervision_manifest_file_sha256": "7c479cfd4ecf1e102984a2af3b2e045a607994f0a6e9a866dde4fd448e9a82b6"
+      }
+    }
+  },
+  "expected_new_jobs": 44,
+  "expected_existing_core_cells": 4,
+  "multitask_status": {
+    "s0": "complete",
+    "q0": "complete",
+    "a6": "complete",
+    "q2": "running",
+    "workspace_arms": "blocked_until_task_to_omega_t_router_and_all16_artifacts_exist"
+  }
+}

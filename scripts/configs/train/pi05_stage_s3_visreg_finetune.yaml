@@ -1,0 +1,78 @@
+# Stage-S3 VISReg arm (arm name: s3-visreg). Copy of pi05_stage_s3_jepa_finetune.yaml with ONE
+# change: the isotropy regularizer on the action-expert penultimate is VISReg instead of SIGReg.
+#
+# VISReg = "Variance-Invariance-Sketching Regularization" (arXiv:2606.02572). It replaces the
+# covariance / characteristic-function term with a sliced-Wasserstein SHAPE sketch (sorted random
+# 1-D projections matched to standard-Gaussian quantiles, p=2) and keeps a separate variance term
+# for SCALE. Motivation, in the paper's words: "the gradient of the Epps-Pulley test diminishes as
+# the embedding collapses ... eventually vanishing entirely — precisely when a strong corrective
+# signal is needed most." That is the failure mode SIGReg cannot correct; it is why this arm exists.
+#
+# Everything else — init, target50 T30 data, full-finetune surface, optimizer, 60k schedule, the
+# lambda_jepa=1.0 (1 - cos) term, the train-time-only omega target, the byte-identical-to-S0 eval —
+# is unchanged from the s3 recipe. Aux budget is also unchanged: visreg_weight 0.05 == lambda_sigreg
+# 0.05, both applied to a SAMPLE-COUNT-INVARIANT statistic (see wsm_jepa.py and
+# internal_planning_and_todos/jul_31/s3_collapse_forensics.md — the n-scaling that killed the first
+# s3 run). CAVEAT worth logging on this arm: unlike the Epps-Pulley statistic, which is bounded by
+# sqrt(2*pi/3) = 1.447, VISReg's scale term (1 - sigma)^2 is UNBOUNDED in the feature std — if the
+# penultimate features drift to std >> 1 the aux grows quadratically. Log jepa/visreg separately.
+#
+# Launch: same entry as s3 (STAGE_S_INTERFACE=jepa, --interface jepa); point WSM_FT_CONFIG at this
+# file. The interface, the loader contract (wsm_w_target) and the checkpoint tree are identical.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s3_visreg
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- the one recipe difference vs pi05_stage_s3_jepa_finetune.yaml ---
+  jepa_regularizer: visreg    # sigreg | visreg          (env override: WSM_JEPA_REGULARIZER)
+  visreg_weight: 0.05         # outer lambda on L_VISReg (env override: WSM_VISREG_WEIGHT)
+  visreg_slices: 128          # K random directions = D/8 at the action-expert width 1024, the
+                              # paper's Fig.-5 robust floor (its own snippet defaults to 64; the
+                              # ImageNet runs use 2048-4096 at projector dim 256/384).
+  visreg_scale_weight: 1.0    # paper default split is 1 / 1 / 1 (scale / shape / center)
+  visreg_shape_weight: 1.0
+  visreg_center_weight: 1.0
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s3_visreg
+  output_dir: ckpts/vla_base/pi05_stage_s3_visreg_finetune
+
+eval: null

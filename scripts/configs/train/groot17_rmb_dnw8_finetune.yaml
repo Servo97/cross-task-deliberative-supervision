@@ -1,0 +1,138 @@
+# GROOT MECHANISM ARM: rmb x dnw8. Derived MECHANICALLY from groot17_rmb_base_finetune.yaml
+# (PHASE 1's sealed base cell); the ONLY delta is the `wsm:` block below, so a
+# base-vs-arm difference can only be the mechanism. Do not hand-edit the shared
+# fields -- regenerate from the base if PHASE 1 changes them.
+#
+# ReMemBench arm groot-rmb-base — the S0-shaped control for the 13-task ReMemBench finetune set,
+# on the GR00T N1.7 backbone. This is the BACKBONE-GENERALITY check for the ReMemBench study:
+# the pi0.5 counterpart is scripts/configs/train/pi05_rmb_base_finetune.yaml.
+#
+# Same arm SHAPE as groot17_target_finetune.yaml: no workspace interface, no aux head, nothing
+# read at inference. The ONLY differences from its RoboCasa counterpart are the data substrate and
+# the step schedule:
+#   * data.soup: remembench13 — a robocasa-FREE glob over the FLAT <Task>/<date>/lerobot export
+#     (utils.soup.remembench_soup, base dir WSM_REMEMBENCH_ROOT). NO subsample block: all 323 train
+#     demos across 13 tasks are used (filter_key None => native full mass, no seed-0 selection).
+#     utils.balancing.GroupedSoup.from_data_view REJECTS a subsample on this soup rather than
+#     silently ignoring it, and utils.subsample.uniform_num_demos must never be called on it —
+#     finetune_groot_17.py skips it on this soup and passes episode_subsample_num_demos=None.
+#   * 15k steps. RATIONALE (recorded so the cross-backbone comparison stays auditable): BOTH
+#     official RoboCasa target finetunes are 60k steps (pi05_target_finetune.yaml,
+#     groot17_target_finetune.yaml). pi's ReMemBench arm scaled that 60k -> 15k because 323 demos
+#     is ~4% of the target50 mass. Applying the IDENTICAL 1/4 scaling to GR00T's own 60k recipe
+#     keeps "each backbone's official recipe, scaled the same way" — the only clean way to read a
+#     groot-vs-pi ReMemBench delta as a BACKBONE effect rather than a schedule effect.
+#     CAVEAT recorded on purpose: GR00T's recipe batch is 128 vs pi's 64, so at equal step counts
+#     GR00T sees 2x the sample exposure (~19 vs ~10 epochs over 323 demos). That 2x ratio is
+#     ALREADY present in the RoboCasa protocol, so matching steps preserves the existing
+#     relationship; matching sample exposure instead would have changed it. Overfit is the accepted
+#     risk on both backbones (see aug_03/remembench_plan.md "accepted overfit risk").
+# Everything else (lr, batch, cameras, freeze surface, augmentation, normalization, init) is
+# byte-identical to the RoboCasa groot target-finetune recipe, so arm-to-arm comparisons stay clean.
+#
+# SUBMIT-TIME (not yaml fields): the launcher (scripts/launch/submit_groot_rmb.py) ships
+#   TARGET_DATA_S3 = s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/datasets/remembench_v02
+# plus the entry's dataset-shape knobs (TARGET_ROOT_SUBDIR=v1.0/target/train, TARGET_EXPECTED_TASKS=13,
+# TARGET_TASK_DIR_GLOBS='*/*/lerobot', WSM_SOUP_KIND=remembench13), mirroring the pi Stage-S
+# dataset profile `remembench_v02_train13`.
+
+regime: vla_base
+backbone: groot_n17
+phase: target_finetune
+
+model:
+  base_model: nvidia/GR00T-N1.7-3B
+  embodiment_tag: NEW_EMBODIMENT
+  action_horizon: 16
+  state_dropout_prob: 0.2
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+  # Same freeze as pretrain / RoboCasa target-FT: train projector + DiT only, no LoRA.
+  freeze:
+    tune_llm: false
+    tune_visual: false
+    tune_projector: true
+    tune_diffusion_model: true
+  # Same per-key normalization + N1.7 caveat as the RoboCasa configs. The ReMemBench export ships
+  # a meta/modality.json BYTE-IDENTICAL to target50's (verified), so robocasa_panda_modality.py +
+  # EmbodimentTag.NEW_EMBODIMENT apply unchanged — no new embodiment, no new modality module.
+  normalization:
+    continuous: min_max
+    gripper_close: binary            # -> min_max under N1.7
+    control_mode: binary             # -> min_max under N1.7
+    state_rotation: rotation_6d      # -> percentile min_max under N1.7
+
+data:
+  soup: remembench13
+  source: human
+  split: target
+  # NO subsample block: remembench13 trains on every demo of every task it is given.
+  # Single-source human split: nothing to balance => one GR00T dataset spec (mix_ratio 1.0).
+  data_balancing:
+    enabled: false
+  # Same augmentation as the RoboCasa recipe.
+  augmentation:
+    video_crop_scale: 0.95
+    resize: 224
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.4
+      saturation: 0.5
+      hue: 0.08
+
+# Gated-DeltaNet workspace conditioner (provenance; the driver reads the env vars of the same
+# meaning). The DiT's global AdaLN bus `temb` [B,1536] gets an additive gated delta-rule read of the
+# causal omega window -- the GR00T analogue of the pi0.5 `adarms_cond` seam, so the pi `s1/dnw8` arm
+# and this arm differ in BACKBONE ONLY. Conditioner is a parity-verified port of the JAX
+# WSMGatedDeltaNetConditioner (tests/test_groot_wsm_deltanet.py::test_jax_parity, max abs 8.9e-08).
+# STATELESS across policy calls -- steering axis, not the RoboTTT fast-weight axis.
+wsm:
+  mode: deltanet
+  enabled: true
+  w_dim: 512                  # WorkspaceEncoder latent dim                    (WSM_W_DIM)
+  window_len: 8               # K -- matches the pi `dnw8` recipe             (WSM_DN_WINDOW)
+  num_heads: 2                #                                               (WSM_DN_HEADS)
+  head_dim: 256               #                                               (WSM_DN_HEAD_DIM)
+  gate_init: 1.0e-3           # tanh(alpha) silent start                       (WSM_DN_GATE_INIT)
+  history_dropout: 0.0        # causal-confusion intervention, OFF             (WSM_DN_HISTORY_DROPOUT)
+  cond_dim: null              # null = auto = DiT inner width (1536)
+  seam: temb
+  # The STUDY's shared image-derived omega cache (encoder chain ba39e908..., 323 npz). It is
+  # model-agnostic, so this is the SAME cache the pi ReMemBench arms consumed -- do NOT regenerate
+  # a groot-specific one, that would add a second difference to the comparison.
+  encoder_chain: ba39e908
+  feats_root: /opt/ml/work/wsm_policy_feats    # staged by the entry (WSM_POLICY_FEATS_ROOT)
+
+optim:
+  lr: 3.0e-5
+  optimizer: adamw
+  betas: [0.95, 0.999]
+  weight_decay: 1.0e-5
+  lr_schedule: cosine
+  warmup_ratio: 0.05
+  dtype: bf16
+
+train:
+  batch_size: 128
+  max_steps: 15000
+  # PROTOCOL: only the FINAL step is evaluable (no per-arm checkpoint selection). The intermediate
+  # saves exist purely as crash insurance — the GR00T SageMaker entry has no resume, so a node
+  # fault at 14k with save_interval=max_steps would lose the whole run. Final ckpt = checkpoint-15000.
+  save_interval: 5000
+  save_total_limit: 4
+  num_workers: 8          # per DDP rank = 64 workers/node on an 8-GPU p5e.48xlarge
+  # Phase-1 pretrain checkpoint — THE SAME init as every other groot study arm (the RoboCasa
+  # target-FT `target_ft/groot_bal33`, i.e. the held-out-reset campaign's base-FT arm, started here).
+  # PROVENANCE: originally written by the phase-1 run to account 124224456861; MIRRORED on
+  # 2026-08-07 to account 141 (weights + processor/statistics/experiment_cfg only; optimizer.pt,
+  # rng_state_*, scheduler.pt, trainer_state.json excluded exactly as the entry's own sync excludes
+  # them) because study storage == execution == 141 since 2026-07-22 and the p5/p5e node role has
+  # no cross-account read on the 124 bucket. Byte-identical model weights (12,576,200,896 B across
+  # the 3 safetensors shards + 239,021,959 B experiment_cfg/initial_actions.npz).
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/groot/mg60_bal33/groot-mg60-bal33/checkpoint-150000
+  exp_name: groot17_rc365_rmb_dnw8
+  output_dir: ckpts/vla_base/groot17_rmb_dnw8_finetune   # LOCAL ONLY (gitignored)
+
+eval: null                   # eval is a separate phase — box-tier ReMemBench heldout-reset harness

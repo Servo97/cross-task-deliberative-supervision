@@ -1,0 +1,66 @@
+# Stage-S3 prediction-horizon arm (arm name: s3-k16). Copy of pi05_stage_s3_jepa_finetune.yaml with
+# ONE change: the JEPA head predicts the next 16 workspace latents instead of only the next one —
+# grid offsets +1..+32 (256 native frames; short-episode tails clamp+mask), i.e. native t+8..t+128 on the stride-8 omega cache grid. One shared trunk,
+# a k-wide output projection, and the JEPA term is the masked MEAN over (sample, future), so
+# lambda_jepa=1.0 means the same aux budget at every k (the s3 collapse's bug class was exactly an
+# n-scaled aux term). Everything else — init, target50 T30 data, full-finetune surface, optimizer,
+# 60k schedule, lambda_sigreg=0.05, the train-time-only target, the byte-identical-to-S0 eval — is
+# the s3 recipe unchanged. The point of the arm: a 1-step latent target is predictable from the
+# current frame alone, so the aux may be teaching very little; a longer horizon forces the
+# penultimate to carry where the task is GOING.
+#
+# Launch: same entry as s3 (STAGE_S_INTERFACE=jepa, --interface jepa); point WSM_FT_CONFIG at this
+# file. The loader ships [16, Dw] targets + a [16] valid mask (padded tail rows masked out); the
+# trainer exports jepa_num_futures to the loader as WSM_JEPA_NUM_FUTURES, so both sides agree.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s3_k32
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  # --- the one recipe difference vs pi05_stage_s3_jepa_finetune.yaml ---
+  jepa_num_futures: 32        # grid rows predicted, offsets +1..+32 (256 native frames; short-episode tails clamp+mask)
+                              # (env override: WSM_JEPA_NUM_FUTURES). The s3 default
+                              # is 1; the lambdas stay at 1.0 / 0.05.
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s3_k32
+  output_dir: ckpts/vla_base/pi05_stage_s3_k32_finetune
+
+eval: null

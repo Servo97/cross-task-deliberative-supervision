@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Orchestrate WSM-v2 (regime vla_wsm_v2) training: action loss + 3D-flow (and SigReg) aux heads.
+# Selects pretrain vs target-finetune via --phase and routes to the right backbone driver.
+# Drivers: vla_training/train/train_wsm_v2/finetune_{groot_17,pi_05}_with_wsm.py
+# Recipes (YAML): scripts/configs/train/wsm_v2/<x>.yaml  (NOTE: WSM-v2 configs TBD).
+# Governs: internal_planning_and_todos/04_wsm_roadmap.md ("R3 = E2 — 3D flow" + "E3 — SigReg/LeJEPA").
+#
+#   scripts/train/vla_wsm_v2/train.sh --backbone groot_17 --phase target_finetune \
+#       --config scripts/configs/train/wsm_v2/groot_wsm_v2.yaml
+#
+# TODO (SageMaker Batch submit — see internal_planning_and_todos/03_infra_and_sagemaker.md):
+#   - Submit to AWS Batch TrainingQueue (HUMANOID_QUEUE, ml.p5.48xlarge 8xH100), --priority 1.
+#   - Override the baked image entry via SAGEMAKER_PROGRAM; pass recipe + flow/sigreg knobs as env vars.
+#   - GR00T: checkpoint_s3_uri live-sync; pi0.5: orbax->S3 background loop inside the entry.
+set -euo pipefail
+
+REGIME="vla_wsm_v2"
+BACKBONE=""                                   # groot_17 | pi_05
+PHASE="target_finetune"                       # pretrain | target_finetune
+CONFIG=""
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+
+usage() { echo "usage: $0 --backbone {groot_17|pi_05} --phase {pretrain|target_finetune} --config <yaml>"; exit 2; }
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --backbone) BACKBONE="$2"; shift 2 ;;
+    --phase)    PHASE="$2";    shift 2 ;;
+    --config)   CONFIG="$2";   shift 2 ;;
+    -h|--help)  usage ;;
+    *) echo "unknown arg: $1"; usage ;;
+  esac
+done
+
+[[ -n "$BACKBONE" ]] || usage
+case "$PHASE" in pretrain|target_finetune) ;; *) echo "bad --phase: $PHASE"; usage ;; esac
+
+# WSM-v2 couples flow (+ sigreg) heads during (target-)finetune; one driver per backbone.
+DRIVER="$REPO_ROOT/vla_training/train/train_wsm_v2/finetune_${BACKBONE}_with_wsm.py"
+CONFIG="${CONFIG:-$REPO_ROOT/scripts/configs/train/wsm_v2/${BACKBONE}_wsm_v2.yaml}"   # TBD
+
+echo "=========================================================="
+echo " plan: regime=$REGIME backbone=$BACKBONE phase=$PHASE"
+echo "   driver : $DRIVER"
+echo "   config : $CONFIG   (WSM-v2 configs TBD)"
+echo "=========================================================="
+
+[[ -f "$DRIVER" ]] || { echo "ERROR: driver not found: $DRIVER"; exit 3; }
+
+# TODO: replace local dispatch with the SageMaker Batch submit (03_infra_and_sagemaker.md).
+python "$DRIVER" --config "$CONFIG"

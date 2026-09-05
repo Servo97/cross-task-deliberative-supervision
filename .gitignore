@@ -1,0 +1,52 @@
+# --- planning: only the curated docs are committed; scratch dumps stay out ---
+internal_planning_and_todos/_archive/
+internal_planning_and_todos/launch_packets/
+internal_planning_and_todos/*.json
+internal_planning_and_todos/*.tgz
+ckpts/
+results/
+wandb/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- uv / virtualenvs (envs are rebuilt via install.sh; uv.lock IS committed) ---
+.venv/
+.venv-*/
+.uv/
+
+# --- data / model artifacts ---
+*.safetensors
+*.pt
+*.ckpt
+*.parquet
+*.mp4
+*.zarr/
+datasets/
+data/
+
+# --- secrets / creds (never commit) ---
+*.pem
+*_sa.json
+.env
+
+# --- editor / os / session ---
+.vscode/
+.idea/
+.DS_Store
+.claude/settings.local.json
+export.zip
+
+# --- kept out by decision (paper source, figures, diagrams, TPU legacy) ---
+overleaf/
+figures/
+draw.io/
+gcp_tpu/
+export/
+papers/

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "robomme_a19_checkpoint_maturity_sweep",
+  "recipe": "v4_70k",
+  "steps": 70000,
+  "final_step": 69999,
+  "deploy_milestones": [10000, 20000, 30000, 40000, 50000, 60000, 69999],
+  "selection_rule": "A19: the reported step is the earliest milestone on the BASE arm's curve after which no later milestone improves the primary metric by more than its paired MDE; applied identically to every arm. RoboMME additionally reports the mean of 50000/60000/69999.",
+  "eval_protocol_note": "p5 fixed-50 lanes = execute-10 ledger (predict 20, execute 10, model_seed 7, max 1300); the paper protocol h20/e16 (robomme-paper856-h20-e16-fixed50-project-v1) exists only in the local project_exact runner. Never pool the two.",
+  "arms": {
+    "M0-70k": {
+      "arm": "v4_s0",
+      "milestones": "all",
+      "queue_id": "a19-m0-70k-milestones-fixed50-p5-parallel-v1",
+      "workspace": null,
+      "note": "paired base re-run under the 70k recipe; fire-able now (no omega store needed)"
+    },
+    "M1": {
+      "arm": "v4_wsm_gdn_live16_drop02",
+      "milestones": [30000, 40000, 50000, 60000, 69999],
+      "queue_id": "a19-m1-milestones-fixed50-p5-parallel-v1",
+      "workspace": "unresolved",
+      "note": "live omega only, K=16; requires the staged M-arm tree and an omega serving path"
+    },
+    "M2": {
+      "arm": "v4_wsm_gdn_demo8_drop02",
+      "milestones": [30000, 40000, 50000, 60000, 69999],
+      "queue_id": "a19-m2-milestones-fixed50-p5-parallel-v1",
+      "workspace": "unresolved",
+      "note": "demo prefix only, K=8"
+    },
+    "M3": {
+      "arm": "v4_wsm_gdn_demo8_live16_drop02",
+      "milestones": "all",
+      "queue_id": "a19-m3-milestones-fixed50-p5-parallel-v1",
+      "workspace": "unresolved",
+      "note": "[8 demo ; 16 live], K=24 -- the parity arm"
+    },
+    "M3-ctrl": {
+      "arm": "v4_wsm_gdn_demo8_live16_drop02_ctrl0b",
+      "milestones": [30000, 40000, 50000, 60000, 69999],
+      "queue_id": "a19-m3ctrl-milestones-fixed50-p5-parallel-v1",
+      "workspace": "unresolved",
+      "note": "identical recipe, ctrl-0b omega store"
+    }
+  }
+}

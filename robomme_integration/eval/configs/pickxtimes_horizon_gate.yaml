@@ -1,0 +1,26 @@
+server:
+  url: "ws://127.0.0.1:8000"
+  timeout: 600
+
+docker:
+  image: "wsm/robomme-cpu-runtime:ubuntu22"
+  cpus: "0-239"
+  env:
+    - "ROBOMME_USE_LAVAPIPE=1"
+    - "LP_NUM_THREADS=4"
+    - "OMP_NUM_THREADS=1"
+
+output_dir: "./results/pickxtimes_horizon_gate"
+
+benchmarks:
+  - benchmark: "vla_eval.benchmarks.robomme.benchmark:RoboMMEBenchmark"
+    subname: counting-pickxtimes-horizon-gate
+    episodes_per_task: 8
+    max_steps: 1300
+    params:
+      tasks: [PickXtimes]
+      action_space: joint_angle
+      dataset: test
+      send_wrist_image: true
+      send_state: true
+      send_video_history: true

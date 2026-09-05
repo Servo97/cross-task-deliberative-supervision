@@ -1,0 +1,64 @@
+# ReMemBench arm rmb-deltanet-w16 — the 13-task DeltaNet arm at cond_window 16.
+#
+# Identical to `pi05_rmb_deltanet_finetune.yaml` (interface tanh, gated delta-rule recurrence behind
+# the wsm_tanh_cond subtree, alpha=1e-3 seam, 15k steps) EXCEPT model.cond_window. The window sweep
+# {2, 8 (parent), 16, 32} asks how much recurrent context the memory tasks actually use.
+#
+# cond_window is read out of THIS file by submit_pi_stage_s.py and sealed into the run manifest and
+# WSM_K_WINDOW; _pi05_common exports it before the openpi import (the dataloader freezes K at import)
+# and fails loudly if loader and conditioner disagree. `pos_decay_bias`'s leading axis IS the window,
+# so serve auto-detects it from the checkpoint — a w16 ckpt can never be served at another window.
+#
+# SUBMIT-TIME (not yaml fields): TARGET_DATA_S3 =
+#   s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/datasets/remembench_v02
+# with target inventory artifact remembench_train13.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_rmb_deltanet_w16
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet
+  cond_window: 16
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: remembench13
+  source: human
+  split: target
+  defer_image_resize_to_model_preprocess: false
+  # NO subsample block: remembench13 trains on every demo of every task it is given.
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 500
+  decay_steps: 25000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 15000
+  # INERT on the Stage-S launch path: submit_pi_stage_s.py sets WSM_FINAL_ONLY_CHECKPOINTS=1
+  # + WSM_SAVE_INTERVAL=max_steps, _pi05_common forces save_interval=max_steps under that flag,
+  # and the entry refuses any retained step dir other than 14999. One checkpoint ships.
+  save_interval: 2500
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_rmb_deltanet_w16
+  output_dir: ckpts/vla_base/pi05_rmb_deltanet_w16_finetune
+eval: null

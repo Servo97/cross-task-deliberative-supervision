@@ -1,0 +1,88 @@
+# groot17_target_finetune.yaml — Phase-2 GR00T N1.7 base-VLA target-task finetune.
+# Governed by internal_planning_and_todos/01_robocasa_protocol_and_recipes.md
+#   "Phase 2 — Target-task finetune".
+#
+# OFFICIAL RoboCasa recipe (doc 01): finetune on the 50 target tasks (human demos,
+#   `target` split), ~60k steps, starting from the phase-1 pretrain checkpoint.
+#   NOTE: composite_unseen tasks are FIRST INTRODUCED here — they are held out of
+#   pretraining. Model / freeze / augmentation are identical to the pretrain phase.
+#   Base-VLA training (NOT a workspace model) — see README naming discipline.
+#
+# Schema (shared across all train/eval configs): model / data / optim / train / eval.
+
+regime: vla_base
+backbone: groot_n17
+phase: target_finetune
+
+model:
+  base_model: nvidia/GR00T-N1.7-3B
+  embodiment_tag: NEW_EMBODIMENT
+  action_horizon: 16
+  state_dropout_prob: 0.2
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+  # Same freeze as pretrain: train projector + DiT only, no LoRA.
+  freeze:
+    tune_llm: false
+    tune_visual: false
+    tune_projector: true
+    tune_diffusion_model: true
+  # Same per-key normalization + N1.7 caveat as the pretrain config.
+  normalization:
+    continuous: min_max
+    gripper_close: binary            # -> min_max under N1.7
+    control_mode: binary             # -> min_max under N1.7
+    state_rotation: rotation_6d      # -> percentile min_max under N1.7
+
+data:
+  # Combined target finetune: ONE run over all 50 target tasks (atomic_seen 18 +
+  # composite_seen 16 + composite_unseen 16), human demos only. composite_unseen first
+  # appears here. Eval is still broken out per-subcategory (see configs/eval/groot17_eval.yaml).
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  # Resource-saving combined-30%: finetune on 30% of EACH subcategory's demos (500 -> 150/task).
+  # GR00T ignores filter_key, so the adapter applies the SAME deterministic seed-0 episode
+  # selection as pi0.5 (utils.subsample) — identical episodes across backbones.
+  subsample:
+    target_fraction: 0.30
+  # Single-source human target split: no MG to balance, so the lever is off here.
+  data_balancing:
+    enabled: false
+  # Same augmentation as pretrain.
+  augmentation:
+    video_crop_scale: 0.95
+    resize: 224
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.4
+      saturation: 0.5
+      hue: 0.08
+
+optim:
+  lr: 3.0e-5
+  optimizer: adamw
+  betas: [0.95, 0.999]
+  weight_decay: 1.0e-5
+  lr_schedule: cosine
+  warmup_ratio: 0.05
+  dtype: bf16
+
+train:
+  batch_size: 128
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 8          # per DDP rank = 64 workers/node on 8-GPU p5.48xlarge
+  # Phase-2 inits from the phase-1 pretrain checkpoint (edit to your run's path).
+  # Phase-2 inits from the phase-1 pretrain checkpoint. Canonical = the BALANCED (bal33) @150k
+  # HF checkpoint dir. On SageMaker the FT entry syncs this S3 path to a local dir (model weights
+  # only — skips optimizer.pt) and passes it via WSM_INIT_FROM; this value is the provenance
+  # record + the local-run fallback.
+  init_from: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/pretrain150k/groot/mg60_bal33/groot-mg60-bal33/checkpoint-150000
+  exp_name: groot17_rc365_target_ft
+  output_dir: ckpts/vla_base/groot17_target_finetune   # LOCAL ONLY (gitignored)
+
+eval: null                   # eval is a separate phase — see configs/eval/groot17_eval.yaml

@@ -1,0 +1,87 @@
+# groot17_wsm_cfg_finetune.yaml — CFG-CONDITIONED GR00T N1.7 target finetune (doc 12, model-free POC).
+#
+# IDENTICAL to groot17_target_finetune.yaml (same init-from the bal33@150k pretrain, combined target soup,
+# seed-0 30% subsample, freeze projector+DiT, VLM frozen, same optim/batch/steps) EXCEPT it conditions the
+# action DENOISER on the workspace latent w_t via AdaLN (added to the DiT temb), trained with classifier-
+# free-guidance dropout. The VLM backbone + perception tokens are NEVER modulated. At eval the serve
+# extrapolates the velocity with a guidance scale; a human demo's w turns it into on-the-fly ICL later.
+#
+# The wsm: block is provenance; the driver reads WSM_POLICY_FEATS_ROOT / WSM_P_DROP / WSM_WITH_FUTURE /
+# WSM_DIAG_EVERY / WSM_W_DIM from the env. See finetune_groot_17_with_wsm_cfg.py.
+
+regime: vla_base
+backbone: groot_n17
+phase: target_finetune
+
+model:
+  base_model: nvidia/GR00T-N1.7-3B
+  embodiment_tag: NEW_EMBODIMENT
+  action_horizon: 16
+  state_dropout_prob: 0.2
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+  freeze:
+    tune_llm: false          # VLM (LLM) frozen — unscathed
+    tune_visual: false       # VLM (vision) frozen — unscathed
+    tune_projector: true     # action-head adapter (as in baseline FT)
+    tune_diffusion_model: true
+  normalization:
+    continuous: min_max
+    gripper_close: binary
+    control_mode: binary
+    state_rotation: rotation_6d
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+  augmentation:
+    video_crop_scale: 0.95
+    resize: 224
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.4
+      saturation: 0.5
+      hue: 0.08
+
+# CFG workspace conditioning (provenance; the driver reads the env vars of the same meaning).
+wsm:
+  mode: cfg                  # vs injection (modulator) / jepa (aux-target)
+  enabled: true
+  w_dim: 512                 # WorkspaceEncoder latent dim (WSM_W_DIM)
+  cond: adaln                # additive AdaLN on the DiT temb (steers the denoiser, not perception)
+  p_drop: 0.2                # per-component CFG dropout to a learned null (WSM_P_DROP)
+  with_future: false         # POC: w_{t+1} slot built but dropped (WSM_WITH_FUTURE). ICL: true.
+  diag_every: 100            # log conditional-vs-unconditional flow-loss gap = is w informative? (WSM_DIAG_EVERY)
+  guidance_scale_eval: 0.0   # serve default; sweep at eval (s=0 -> learned unconditional ≈ baseline). Calibrate from diag + corr magnitude.
+  # encoder: use the DECODE-metric winner for w (orig_65k decodes best); v2/50k is the currently-deployed one.
+  feats_root: /opt/ml/work/wsm_policy_feats
+  encoder_ckpt: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/wsm_runs/groot_wsm_v2/wsm_step50000.pt
+  policy_feats_s3: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/wsm_policy_feats/groot_step50000
+
+optim:
+  lr: 3.0e-5
+  optimizer: adamw
+  betas: [0.95, 0.999]
+  weight_decay: 1.0e-5
+  lr_schedule: cosine
+  warmup_ratio: 0.05
+  dtype: bf16
+
+train:
+  batch_size: 128
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 8          # per DDP rank = 64 workers/node on 8-GPU p5.48xlarge
+  init_from: s3://sagemaker-us-west-2-124224456861/sarvesh.patil/wsm_robocasa/pretrain150k/groot/mg60_bal33/groot-mg60-bal33/checkpoint-150000
+  exp_name: groot17_rc365_wsm_cfg
+  output_dir: ckpts/vla_base/groot17_wsm_cfg   # LOCAL ONLY (gitignored)
+
+eval: null

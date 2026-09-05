@@ -1,0 +1,69 @@
+# pi05_remembench_eval.yaml — pi-0.5 eval on the ReMemBench memory benchmark.
+#
+# Additive: this config exists so ReMemBench can be run WITHOUT touching pi05_eval.yaml or
+# the RoboCasa365 target protocol. Everything ReMemBench-specific is gated on the
+# `remembench` task-set name (vla_training/eval/remembench_tasks.py); a run that does not
+# name a remembench task set behaves exactly as before.
+#
+# What is different from the RoboCasa protocol:
+#   * Environments come from the ReMemBench fork (~/Research/TRI/ReMemBench, branch
+#     tri-integration), NOT ~/Research/robocasa. Serve/eval must run in an env where
+#     `import robocasa` resolves to that checkout (envs/remembench_env).
+#   * Episodes are pinned by replaying the demo `ep_meta` + a derived seed, not by seed
+#     alone — MemPutK* draw object counts from the global np.random, which no seed reaches.
+#     The episode manifest is therefore MANDATORY here; there is no valid unseeded path.
+#     Build it with scripts/launch/build_remembench_episode_manifest.py.
+#   * Horizons are per-task (1000..3200 steps) and come from the manifest, not from
+#     RoboCasa's dataset registry (ReMemBench tasks are absent from it).
+#   * The reported unit is the memory CATEGORY (4 of them), not the variant (13 of them):
+#     six variants are corner/side permutations of two spatial tasks, so a flat 13-task
+#     mean triple-counts the spatial condition. aggregate_eval.py emits
+#     `remembench_by_category` whenever a remembench task set is present.
+#
+# Schema (shared across all train/eval configs): model / data / optim / train / eval.
+
+regime: vla_base
+backbone: pi05
+phase: eval
+
+model:
+  config_name: pi05_robocasa_target_ft
+  pi05: true
+  max_token_len: 200
+  # Checkpoint under eval. The zero-shot floor uses the RoboCasa S0 baseline; a memory-
+  # conditioned arm points this at its own checkpoint.
+  checkpoint: ckpts/vla_base/pi05_target_finetune/checkpoint-60000
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data: null                   # no training data at eval time
+
+optim: null                  # no optimization at eval time
+
+train: null                  # eval-only config
+
+eval:
+  # `split` is RoboCasa's SCENE split and is not meaningful for ReMemBench, whose scenes
+  # are pinned to layout 1 / style 0 by every demo session. The wrapper recognizes RoboCasa
+  # scene-split names and substitutes ReMemBench's obj_instance_split "A".
+  split: target
+  # One task set covering all 13 variants. Per-category probes are also available as
+  # remembench_spatial / remembench_prospective / remembench_object_associative /
+  # remembench_object_set if only one condition needs re-running.
+  task_sets:
+    - {name: remembench, num_tasks: 13}
+  # Episodes per task are NOT uniform: the held-out tail is 3..12 demos depending on how
+  # many were collected (12 to 56 per task). num_trials is ignored when an episode manifest
+  # is supplied; the manifest's 88 episodes are the eval set.
+  num_trials: 1
+  episode_manifest: null     # REQUIRED: path/URI of the sealed remembench manifest
+  execution_order: atomic_first
+  exec_steps: 8
+  replan_steps: 5
+  metric: category_weighted_avg_success   # mean over the 4 memory categories
+  seed: 7
+  video: first               # none | first | all
+  num_workers: 4
+  output_dir: results/vla_base/pi05_remembench_eval   # LOCAL ONLY (gitignored)

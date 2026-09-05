@@ -1,0 +1,69 @@
+# ReMemBench SINGLE-TASK cell — task MemWashAndReturnLeft (object_associative), arm rmb1t-dnw8.
+#
+# S1 gated-DeltaNet steering conditioner over an 8-step omega window (the multi-task arm's window).
+#
+# This is the 13-task ReMemBench arm `pi05_rmb_deltanet_finetune.yaml` with exactly two changes:
+#   * the training soup is filtered to ONE task at submit time (`--single-task MemWashAndReturnLeft`, sealed into
+#     the run manifest as data.training_task_filter and shipped as WSM_TASKS). The yaml itself still
+#     says `soup: remembench13` because the node materializes the whole sealed 13-task substrate —
+#     the omega cache's encoder_id embeds the full 13-task demos_per_task map and is not divisible.
+#   * 4000 steps (this task ships 20 train demos; the 15k multi-task schedule would be a wildly
+#     different epoch count per cell). Uniform across all 24 single-task cells; final step sealed,
+#     no per-arm checkpoint selection.
+# lr / batch / cameras / ema / freeze surface / init are byte-identical to the multi-task arm, so
+# single-task vs 13-task deltas are attributable to the soup and the schedule only.
+#
+# SUBMIT-TIME (not yaml fields): TARGET_DATA_S3 =
+#   s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/datasets/remembench_v02
+# with target inventory artifact remembench_train13, --dataset-profile remembench_v02_train13,
+# --single-task MemWashAndReturnLeft, --train-steps 4000, arm s1.
+
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_rmb1t_washL_dnw8
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet
+  cond_window: 8
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: remembench13
+  source: human
+  split: target
+  defer_image_resize_to_model_preprocess: false
+  # NO subsample block: remembench13 trains on every demo of every task it is given.
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 500
+  decay_steps: 25000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 4000
+  # INERT on the Stage-S launch path: submit_pi_stage_s.py sets WSM_FINAL_ONLY_CHECKPOINTS=1
+  # + WSM_SAVE_INTERVAL=max_steps, _pi05_common forces save_interval=max_steps under that flag,
+  # and the entry refuses any retained step dir other than 3999. One checkpoint ships.
+  save_interval: 1000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_rmb1t_washL_dnw8
+  output_dir: ckpts/vla_base/pi05_rmb1t_washL_dnw8_finetune
+eval: null

@@ -1,0 +1,62 @@
+# pi05_stage_s1_ptrm_120k_finetune.yaml — user-directed exploratory cell (2026-08-09).
+#
+# PTRM head on the DEFAULT-recipe deltanet-w8 arm (NO norm-split — comparators are the default
+# table: baseline 55.8, deltanet w8 59.9) at DOUBLE the study budget (120k steps; hypothesis:
+# the recursive head needs more optimization than 60k gives it). Two deltas vs the sealed PTRM
+# arm s1-94b215496fe2ec2e (stats era AND budget) — an exploratory cell, not a one-factor
+# discriminator. Optimizer block untouched: cosine decay_steps stays 100000, so LR matches every
+# sibling arm through 100k and rides the floor (2.5e-6) for the final 20k.
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s1_ptrm_120k
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet_ptrm
+  cond_window: 8
+  ptrm_steps: 4
+  ptrm_q_weight: 0.1
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  # Experimental and deliberately OFF for sealed Stage-S runs: this defers worker-side PIL
+  # resizing to the batched JAX model graph. The implementations differ by up to one uint8 code
+  # on covered camera shapes, so enabling it requires an explicit acceptance/canary decision.
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 120000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s1_ptrm_120k
+  output_dir: ckpts/vla_base/pi05_stage_s1_ptrm_120k_finetune
+
+eval: null

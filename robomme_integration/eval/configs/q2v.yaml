@@ -1,0 +1,8 @@
+script: "robomme_integration/eval/model_server.py"
+args:
+  checkpoint: "${oc.env:ROBOMME_Q2V_CHECKPOINT}"
+  model_seed: 7
+  demo_frames: 16
+  chunk_size: 10
+  max_batch_size: 8
+  port: 8000

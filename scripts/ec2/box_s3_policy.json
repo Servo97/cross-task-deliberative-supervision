@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadBucket",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::sagemaker-us-west-2-141701954645"
+    },
+    {
+      "Sid": "ReadAll",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "arn:aws:s3:::sagemaker-us-west-2-141701954645/*"
+    },
+    {
+      "Sid": "WriteOwnPrefix",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:AbortMultipartUpload"],
+      "Resource": "arn:aws:s3:::sagemaker-us-west-2-141701954645/sarvesh.patil/*"
+    }
+  ]
+}

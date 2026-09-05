@@ -1,0 +1,63 @@
+# pi05_norm_s1_deltanet_w16_drop05_finetune.yaml — H7 recipe-transfer discriminator.
+#
+# EXACT copy of pi05_norm_s1_deltanet_w16_finetune.yaml (the n-wave dw16 recipe) plus ONE change:
+# `model.cond_history_dropout: 0.5`. On ReMemBench the same intervention turned w16 from 35.8 into
+# the benchmark's best deltanet cell (38.2) while hurting w8 — the causal-confusion signature
+# (hypothesis_ledger.md H7). This cell discharges the parked stronger variant "history dropout as
+# the default recipe at w>8": if the rescue transfers to the near-fully-observed benchmark, the
+# recipe claim is cross-benchmark; if not, dropout's value is demand-gated like every other
+# mechanism (which is itself the paper's central line). Same init, data, schedule, optimizer.
+regime: vla_base
+backbone: pi05
+phase: target_finetune
+
+model:
+  config_name: pi05_robocasa_stage_s1_deltanet_w16_drop05_normsplit
+  pi05: true
+  max_token_len: 200
+  ema_decay: 0.99
+  freeze: none
+  vision_lr_scale: 1.0
+  augmentation_in_preprocess: true
+  cond_type: gated_deltanet
+  cond_window: 16
+  cond_history_dropout: 0.5   # THE only recipe delta vs the n-wave dw16 parent
+  cameras:
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  norm_split_nav: true          # THE only recipe delta vs the parent
+  soup: target50
+  source: human
+  split: target
+  introduces_composite_unseen: true
+  # Experimental and deliberately OFF for sealed Stage-S runs: this defers worker-side PIL
+  # resizing to the batched JAX model graph. The implementations differ by up to one uint8 code
+  # on covered camera shapes, so enabling it requires an explicit acceptance/canary decision.
+  defer_image_resize_to_model_preprocess: false
+  subsample:
+    target_fraction: 0.30
+  data_balancing:
+    enabled: false
+
+optim:
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 100000
+  decay_lr: 2.5e-6
+  dtype: bf16
+
+train:
+  batch_size: 64
+  max_steps: 60000
+  save_interval: 5000
+  num_workers: 32
+  init_from: s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/pretrain150k/pi05/mg60_bal33/run/149999/params
+  weight_loader: null
+  exp_name: pi05_rc365_stage_s1_deltanet_w16_drop05_normsplit
+  output_dir: ckpts/vla_base/pi05_stage_s1_deltanet_w16_drop05_finetune_normsplit
+
+eval: null

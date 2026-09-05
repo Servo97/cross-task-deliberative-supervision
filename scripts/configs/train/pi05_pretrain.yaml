@@ -1,0 +1,75 @@
+# pi05_pretrain.yaml — Phase-1 pi-0.5 base-VLA pretrain on RoboCasa365.
+# Governed by internal_planning_and_todos/01_robocasa_protocol_and_recipes.md
+#   "The benchmark protocol (official)" + "pi0.5 recipe (openpi pi05_pretrain_human300)".
+#
+# OFFICIAL RoboCasa recipe (doc 01, the 39.6% atomic_seen config): pretrain on
+#   pretrain_human300_mg60 (source="all"). Freeze NOTHING (prefix Gemma trains),
+#   full-LR vision (no 0.1x throttle), EMA 0.99. Runs on the openpi jax-latest fork
+#   (ported_raw/pi05_upgraded_skill.md; memory openpi-jax-latest-fork.md).
+#   This is base-VLA training (NOT a workspace model) — see README naming discipline.
+#
+# Schema (shared across all train/eval configs): model / data / optim / train / eval.
+
+regime: vla_base
+backbone: pi05
+phase: pretrain
+
+model:
+  config_name: pi05_robocasa_pretrain   # openpi TrainConfig name registered for this run
+  pi05: true
+  max_token_len: 200                     # pi05 packs discretized state into the prompt
+  ema_decay: 0.99
+  # Freeze NOTHING — prefix Gemma trains; vision tower trains at FULL LR (no 0.1x throttle).
+  freeze: none
+  vision_lr_scale: 1.0                   # 1.0 = full-LR vision (official); != 1.0 throttles SigLIP
+  # Augmentation is INSIDE model.preprocess_observation(train=True) — ColorJitter +
+  # RandomCrop 0.95 + Rotate +/-5deg. It is ALWAYS ON; NOT a config transform.
+  augmentation_in_preprocess: true
+  cameras:                               # 3 cams @ 224x224 (doc 01 obs spec)
+    - robot0_agentview_left
+    - robot0_agentview_right
+    - robot0_eye_in_hand
+
+data:
+  # Dataset soup: human + MimicGen pretrain mix (registry source="all").
+  soup: pretrain_human300_mg60
+  source: all
+  split: pretrain
+  # --- Data balancing lever (the balancing-ON pretrain arm) --------------------------
+  # Target an even per-batch source mix ~ 1/3 mg-atomic : 1/3 human-atomic : 1/3 human-composite
+  # (equal per-source weights + no cap => equal thirds in expectation). Hypothesis: this lifts the
+  # composite / composite_unseen columns vs MimicGen-dominated batches. Realized only in
+  # expectation by static weights (a 256-batch lands at ~33% +/- ~3% binomial). Implemented by
+  # utils.balancing (compute_group_masses -> openpi dataset_weights). For the balancing-OFF arm
+  # set enabled:false (openpi's native size power-law).
+  data_balancing:
+    enabled: true
+    mg_atomic_weight: 1.0
+    human_atomic_weight: 1.0
+    human_composite_weight: 1.0
+    max_mg_atomic_fraction: 1.0          # 1.0 = no cap; with equal weights => 33/33/33
+    strategy: per_batch_resample         # per_batch_resample | source_weighted | none
+
+optim:
+  # Official cosine: peak 2.5e-5, warmup 1000, decay 100000, decay_lr 2.5e-6.
+  lr: 2.5e-5
+  lr_schedule: cosine
+  warmup_steps: 1000
+  decay_steps: 150000          # cosine decays over the full run (= train.max_steps)
+  decay_lr: 2.5e-6
+  dtype: bf16
+  # SCALABLE: batch 256 for full 8xH100 utilization with LR sqrt-scaled to 5e-5
+  #   (validated; see doc 01 + memory openpi-jax-latest-fork.md).
+
+train:
+  batch_size: 64                         # scalable to 256 (then set optim.lr: 5.0e-5)
+  max_steps: 150000                      # run length (user: both backbones to 150k)
+  save_interval: 20000                   # ckpt every 20k + a final ckpt at max_steps (entry forces final)
+  num_workers: 32
+  # Init from the published pi0.5 base params.
+  weight_loader: gs://openpi-assets/checkpoints/pi05_base/params
+  init_from: null
+  exp_name: pi05_rc365_pretrain
+  output_dir: ckpts/vla_base/pi05_pretrain   # LOCAL ONLY (gitignored)
+
+eval: null                   # eval is a separate phase — see configs/eval/pi05_eval.yaml

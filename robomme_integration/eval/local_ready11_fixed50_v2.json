@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "name": "robomme-local5090-ready11-fixed50-v2",
+  "jobs": [
+    {
+      "task": "VideoUnmaskSwap",
+      "arm": "q0",
+      "run_id": "st-v1-videounmaskswap-q0-seed0-2530743c5c316d40",
+      "manifest_sha256": "d822f76bc4eb246862a12829b702641fb7babf370244d96ebf751ffd6c5842cd",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoUnmaskSwap/q0/seed0/st-v1-videounmaskswap-q0-seed0-2530743c5c316d40"
+    },
+    {
+      "task": "VideoUnmaskSwap",
+      "arm": "a6",
+      "run_id": "st-v1-videounmaskswap-a6-seed0-c403dfa6698419e5",
+      "manifest_sha256": "fe026e5d2c9f0589f2f6c67d2d95feb8d0dc7dc3c86187c571f2eac1dc3c3ed3",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoUnmaskSwap/a6/seed0/st-v1-videounmaskswap-a6-seed0-c403dfa6698419e5"
+    },
+    {
+      "task": "VideoUnmaskSwap",
+      "arm": "q2",
+      "run_id": "st-v1-videounmaskswap-q2-seed0-92e4ebe048a83186",
+      "manifest_sha256": "ddf7477f95f63d24f83267d927143b379e77d6c83bb5e43e34da5ab2ff87a38c",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoUnmaskSwap/q2/seed0/st-v1-videounmaskswap-q2-seed0-92e4ebe048a83186"
+    },
+    {
+      "task": "PickHighlight",
+      "arm": "s0",
+      "run_id": "st-v1-pickhighlight-s0-seed0-07dc5a0855017736",
+      "manifest_sha256": "df610dff73e39ae54872ce7956a9863871ccecca1f6b776d6fe00ee1730f580b",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/PickHighlight/s0/seed0/st-v1-pickhighlight-s0-seed0-07dc5a0855017736"
+    },
+    {
+      "task": "PickHighlight",
+      "arm": "q0",
+      "run_id": "st-v1-pickhighlight-q0-seed0-b0d44c0d3bb274c4",
+      "manifest_sha256": "cf023243aa23df8f2b0e3221946567d944484986c2208ff65e8533b38982090d",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/PickHighlight/q0/seed0/st-v1-pickhighlight-q0-seed0-b0d44c0d3bb274c4"
+    },
+    {
+      "task": "PickHighlight",
+      "arm": "a6",
+      "run_id": "st-v1-pickhighlight-a6-seed0-119a0f88b5660321",
+      "manifest_sha256": "b4f816b206cbb5b57b8b27f1ebac83406490ffaa80681f128a19c935241f927a",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/PickHighlight/a6/seed0/st-v1-pickhighlight-a6-seed0-119a0f88b5660321"
+    },
+    {
+      "task": "PickHighlight",
+      "arm": "q2",
+      "run_id": "st-v1-pickhighlight-q2-seed0-ceb25ce79a74b409",
+      "manifest_sha256": "9e57d8be54b31b8b2af1b7891db008d8bb4272aa4947b8bcaf6710efc8e5fe63",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/PickHighlight/q2/seed0/st-v1-pickhighlight-q2-seed0-ceb25ce79a74b409"
+    },
+    {
+      "task": "VideoRepick",
+      "arm": "s0",
+      "run_id": "st-v1-videorepick-s0-seed0-438bfcb5769653fb",
+      "manifest_sha256": "433f17e189653cf565a4a5a8e4ce3c8798f8b37f2b26e8866f01cc298d40c6f0",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoRepick/s0/seed0/st-v1-videorepick-s0-seed0-438bfcb5769653fb"
+    },
+    {
+      "task": "VideoRepick",
+      "arm": "q0",
+      "run_id": "st-v1-videorepick-q0-seed0-847236d3da541899",
+      "manifest_sha256": "71a27dc4aacb3a3a0cccc898d240daba60715bb544f047b2ff4ece4a89773e20",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoRepick/q0/seed0/st-v1-videorepick-q0-seed0-847236d3da541899"
+    },
+    {
+      "task": "VideoRepick",
+      "arm": "q2",
+      "run_id": "st-v1-videorepick-q2-seed0-9515bf9aab62fe71",
+      "manifest_sha256": "cab5c305563c9a0a7238e08f0f0111c56d4eebf30b3f46fde7a1ea1b41a8bdea",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/VideoRepick/q2/seed0/st-v1-videorepick-q2-seed0-9515bf9aab62fe71"
+    },
+    {
+      "task": "MoveCube",
+      "arm": "s0",
+      "run_id": "st-v1-movecube-s0-seed0-ccb38f8fdbaa4377",
+      "manifest_sha256": "c56d2e328dd9f01496342ab168965bb65d60337d6957f2d116caa9d1101ae407",
+      "output": "s3://sagemaker-us-west-2-141701954645/sarvesh.patil/wsm_robocasa/studies/long_context_v1/checkpoints/robomme/pi05/single_task_v1/MoveCube/s0/seed0/st-v1-movecube-s0-seed0-ccb38f8fdbaa4377"
+    }
+  ]
+}

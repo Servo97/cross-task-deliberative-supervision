@@ -1,0 +1,18 @@
+server:
+  url: "ws://127.0.0.1:18100"
+  timeout: 600
+
+output_dir: "./results"
+
+benchmarks:
+  - benchmark: "robomme_integration.eval.benchmark:RoboMMEOfficialHistoryBenchmark"
+    subname: counting-stopcube
+    episodes_per_task: 50
+    params:
+      tasks: [StopCube]
+      action_space: joint_angle
+      max_steps: 1300
+      dataset: test
+      send_wrist_image: true
+      send_state: true
+      send_video_history: true
