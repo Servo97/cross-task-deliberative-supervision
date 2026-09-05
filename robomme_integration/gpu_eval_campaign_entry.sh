@@ -244,6 +244,15 @@ HARNESS_SRC="$(one_path d '*/robomme-v0.4.0/src')"
 ROBOMME_SRC="$(one_path d '*/robomme-benchmark-f2b540e6/src')"
 MANISKILL_SRC="$(one_path d '*/ManiSkill-07be6fbc')"
 SIM_SITE="$(one_path d '*/env-v0.4.0/lib/python3.11/site-packages')"
+# Same CUDA-torch overlay as gpu_eval_preflight_entry.sh (2026-09-05): the v0.4.0 runtime's torch is
+# CPU-only and the native-EGL lanes read camera frames back through torch on the GPU.
+if ! PYTHONPATH="$SIM_SITE" "$PY" -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+  echo "[entry] simulator site torch has no CUDA — overlaying torch==${ROBOMME_SIM_TORCH:-2.9.1} (cu128) into $SIM_SITE"
+  uv pip install --python "$PY" --target "$SIM_SITE" --index-url https://download.pytorch.org/whl/cu128 \
+    "torch==${ROBOMME_SIM_TORCH:-2.9.1}" || { echo "FATAL simulator torch overlay failed" >&2; exit 46; }
+  PYTHONPATH="$SIM_SITE" "$PY" -c "import torch, sys; print('[entry] simulator torch', torch.__version__, 'cuda', torch.cuda.is_available()); sys.exit(0 if torch.cuda.is_available() else 1)" \
+    || { echo "FATAL simulator torch still has no CUDA" >&2; exit 46; }
+fi
 cat >"$LINKS/vla-eval" <<EOF
 #!/usr/bin/env bash
 exec "$PY" -m vla_eval.cli.main "\$@"

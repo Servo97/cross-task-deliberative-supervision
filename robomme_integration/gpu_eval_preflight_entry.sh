@@ -136,6 +136,19 @@ MANISKILL="$(one_dir '*/ManiSkill-07be6fbc')"
 OPENPI_SITE="$WORK/openpi/.venv/lib/python3.11/site-packages"
 [[ -d "$OPENPI_SITE" ]] || { echo "FATAL OpenPI site-packages absent" >&2; exit 33; }
 export OPENPI_SITE ROBOMME_RUNTIME_SITE="$SITE"
+# 2026-09-05 (preflight 0b3ea564…): the registered v0.4.0 runtime carries a CPU-only torch — it was
+# built for the lavapipe / SAPIEN_RENDER_DEVICE=cpu docker path. The native-EGL p5 lanes render on
+# the GPU and ManiSkill reads frames back through torch (`get_picture_cuda(...).torch()`), which
+# raised "Torch not compiled with CUDA enabled" in every shard. Overlay the exact torch build the
+# local paper-protocol runtime already uses (2.9.1+cu128) into the simulator site. The runtime
+# tarball identity recorded in the claim is unchanged; the overlay is logged here.
+if ! PYTHONPATH="$SITE" "$PY" -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+  echo "[entry] simulator site torch has no CUDA — overlaying torch==${ROBOMME_SIM_TORCH:-2.9.1} (cu128) into $SITE"
+  uv pip install --python "$PY" --target "$SITE" --index-url https://download.pytorch.org/whl/cu128 \
+    "torch==${ROBOMME_SIM_TORCH:-2.9.1}" || { echo "FATAL simulator torch overlay failed" >&2; exit 35; }
+  PYTHONPATH="$SITE" "$PY" -c "import torch, sys; print('[entry] simulator torch', torch.__version__, 'cuda', torch.cuda.is_available()); sys.exit(0 if torch.cuda.is_available() else 1)" \
+    || { echo "FATAL simulator torch still has no CUDA" >&2; exit 35; }
+fi
 # Source trees stay first, but overlapping binary/Python dependencies must resolve from the
 # uv-locked OpenPI environment.  The bundled evaluator site is a fallback for simulator-only
 # packages; putting it ahead of OpenPI previously shadowed NumPy and made JAX unimportable.
