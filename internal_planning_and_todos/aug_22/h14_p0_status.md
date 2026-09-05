@@ -7748,3 +7748,25 @@ admitted under it as `reviewed_training_loop_refactor_2026_08_12_v1`; exact and 
 semantics unchanged; the stale pin test now pins the live digest (so any further edit of the trainer
 fails the suite loudly, as intended). Recovered trainer versions kept at
 `scratchpad/trainer_versions/` (session-local) — the S3 bundles are the durable record.
+
+### 56.8 Fire #8: servers up, simulator shards died on a CPU-only torch in the registered runtime (2026-09-05 22:35Z)
+
+`0b3ea564…` (trainer admission in place): all 8 policy servers came up, the 8 native-EGL shards
+launched, then each episode errored in ManiSkill `render_camera.get_picture → get_picture_cuda(...)
+.torch()` → `AssertionError: Torch not compiled with CUDA enabled` (torch imported from
+`runtime/env-v0.4.0/.../site-packages`); with 0 actions the lane's JIT prewarm marker never appeared
+and the lane timed out. The registered runtime tarball (`eval_runtime/v0.4.0/60da89c3…`, 0.79 GB,
+2026-08-04) was built for the CPU-render docker path (`launch_sharded.py`: `ROBOMME_USE_LAVAPIPE=1`,
+`SAPIEN_RENDER_DEVICE=cpu`, `MUJOCO_GL=osmesa`) and ships a CPU torch; the native-EGL p5 lane
+(`probe.native_egl = True`) renders on the GPU and needs a CUDA torch in the simulator site. The
+local paper-protocol copy of the same runtime (`~/Research/TRI/robomme_eval/runtime-v0.4.0`) already
+carries torch 2.9.1+cu128 (+ torchvision 0.24.1+cpu), which is why the local runner never hit this.
+
+Fix (repo `61dc9db`): both eval entries check `torch.cuda.is_available()` with `PYTHONPATH=<sim site>`
+and, if false, `uv pip install --python $PY --target <sim site> --index-url …/whl/cu128 torch==2.9.1`
+(env `ROBOMME_SIM_TORCH` overrides), then re-check and fail fast (exit 35 / 46). The campaign's
+runtime receipt hashes the tarball, wrapper, upstream commit and vision encoder — not the extracted
+site — so the overlay does not disturb the receipt. Proper fix for later: register a v0.4.1 runtime
+tarball built with the CUDA torch and re-pin `RUNTIME_SHA` in `launch_p5_campaign.py` /
+`framesamp_b1_cloud.py` (deferred; ~1 h + 3 GB upload). Fire #9
+`p5-native-eval-v1-93eb1f24198da37de5e0` at 400, source tree `5b463c57…`.

@@ -143,9 +143,9 @@ export OPENPI_SITE ROBOMME_RUNTIME_SITE="$SITE"
 # local paper-protocol runtime already uses (2.9.1+cu128) into the simulator site. The runtime
 # tarball identity recorded in the claim is unchanged; the overlay is logged here.
 if ! PYTHONPATH="$SITE" "$PY" -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
-  echo "[entry] simulator site torch has no CUDA — overlaying torch==${ROBOMME_SIM_TORCH:-2.9.1} (cu128) into $SITE"
-  uv pip install --python "$PY" --target "$SITE" --index-url https://download.pytorch.org/whl/cu128 \
-    "torch==${ROBOMME_SIM_TORCH:-2.9.1}" || { echo "FATAL simulator torch overlay failed" >&2; exit 35; }
+  echo "[entry] simulator site torch has no CUDA — overlaying torch==${ROBOMME_SIM_TORCH:-2.9.1+cu128} into $SITE"
+  uv pip install --python "$PY" --target "$SITE" --reinstall-package torch --index-url https://download.pytorch.org/whl/cu128 \
+    "torch==${ROBOMME_SIM_TORCH:-2.9.1+cu128}" || { echo "FATAL simulator torch overlay failed" >&2; exit 35; }
   PYTHONPATH="$SITE" "$PY" -c "import torch, sys; print('[entry] simulator torch', torch.__version__, 'cuda', torch.cuda.is_available()); sys.exit(0 if torch.cuda.is_available() else 1)" \
     || { echo "FATAL simulator torch still has no CUDA" >&2; exit 35; }
 fi
