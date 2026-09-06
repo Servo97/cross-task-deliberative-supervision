@@ -7844,3 +7844,50 @@ fire #12 `p5-native-eval-v1-93eae46be2e103c8acb6` at 400, then the campaign agai
 submitted at 400, arn `…/31b46f8f-f972-4107-8416-fdfe959b89a9`, queue
 `a19-m0-70k-milestones-fixed50-p5-parallel-v1` (112 cells, 24 h cap). Cells sync to
 `s3_salvage/…/evaluations/fixed50_campaigns/…` every 30 min.
+
+## §57 RoboMME base maturity curve (A19 / H14.9) — 112 cells landed, 2026-09-06 07:17Z
+
+Campaign `a19-m0-70k-milestones-fixed50-p5-parallel-v1` (job `31b46f8f…`, priority 400, 5.5 h on one
+p5 node, 8 concurrent fixed-50 lanes, ≈12 min/cell). Universe: `p5_fixed50_vla_eval_predict20_
+execute10_v1` (execute-10, model seed 7, 50 episodes × 16 tasks = 800 per milestone) — **selection
+lane only; not comparable to the paper-protocol anchor 17.875 % (h20/e16)**. Run
+`mt-v4-70k-all16-v4_s0-seed0-28d80fb948f834df` (recipe v4_70k). Reader:
+`scripts/analysis/a19_rmme_curve.py`; raw cells + `a19_curve.json` under
+`wsm_data/s3_salvage/…/evaluations/fixed50_campaigns/a19-m0-70k-milestones-fixed50-p5-parallel-v1/`;
+copy at `rwm/evidence/E-rmme-base-curve-a19.json`.
+
+| step | successes / 800 | mean % | Wilson 95 % |
+|---|---|---|---|
+| 10000 | 96 | 12.00 | [9.93, 14.44] |
+| 20000 | 103 | 12.88 | [10.73, 15.37] |
+| 30000 | 113 | 14.12 | [11.88, 16.71] |
+| 40000 | 121 | 15.12 | [12.81, 17.77] |
+| 50000 | 134 | **16.75** | [14.32, 19.50] |
+| 60000 | 132 | 16.50 | [14.09, 19.23] |
+| 69999 | 115 | 14.38 | [12.11, 16.98] |
+
+Per-task grid (successes / 50) in the JSON; strongest tasks SwingXtimes (11→18→15), PickXtimes
+(12→16→14), MoveCube, VideoUnmask, VideoPlaceButton (~11–15); near-floor tasks InsertPeg, RouteStick,
+StopCube, VideoRepick, PickHighlight (0–3 throughout); ButtonUnmaskSwap rises 0→4 only after 40k.
+
+**Readings.**
+1. The curve rises monotonically 12.0 → 16.75 % from 10k to 50k (+4.75 pp; SE of a two-point
+   difference ≈ 1.8 pp, so the 10k→50k rise is ≈2.6 SE), plateaus at 50–60k, and drops 2.4 pp by
+   69999 (within one SE of 50k). Reporting "mean of last 3" (50k/60k/70k) gives 15.88 %.
+2. **The pre-registered A19 rule is degenerate here.** With the M-arm MDE of 5 pp, "earliest
+   milestone after which no later milestone improves by > MDE" returns **s* = 10000**, because the
+   entire rise is below 5 pp. At 2 pp it returns 40000; at 2 SE (3.7 pp) it returns 30000; the argmax
+   is 50000. The rule was written for a curve that clears the MDE; this one does not, which is itself
+   the H14.9 finding: **RoboMME base success is within the arm-comparison MDE of saturation from 10k
+   onward, and the 69999 step the sealed anchor used is past the plateau (−2.4 pp vs 50k, n.s.).**
+3. What this means for the arms (weakest form): any fixed common step from 30k to 60k is
+   defensible; 69999 (the sealed choice) is the worst of the plateau by point estimate but not
+   distinguishable. Choosing 50000 by argmax on the base would bake a winner's-curse bias (~+1 SE)
+   into the base anchor.
+
+**Decision needed (pre-register before any arm number is looked at):** the common step for all
+RoboMME arms. Options: (a) keep the rule literally → 10000 (conservative, lowest anchor); (b) amend
+A19 to "argmax of the base curve, applied to all arms" → 50000; (c) amend to "2-SE plateau entry" →
+30000; (d) keep 69999 for continuity with the sealed anchor. Cheapest discriminator: paper-protocol
+(h20/e16, fixed-800) re-scoring of 30000, 50000 and 69999 on Babel (3 × ≈1.5 h on one GPU), which
+also calibrates the execute-10 → paper-protocol offset for this run.

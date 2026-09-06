@@ -2,7 +2,7 @@
 
 | benchmark | base job (queued p5 @400) | milestones | eval per milestone | venue / cost | selection |
 |---|---|---|---|---|---|
-| RoboMME | `mt-v4-70k-…-28d80fb948f834df` (92beb42e…), 86,150 s | 10k…60k, 69999 | fixed-800 paper protocol h20/e16 | local `project_exact` runner ≈1.5 h/eval (p5 fixed-50 lanes run execute-10 → not the paper universe; port DEFERRED) | base curve → s*; paper protocol also reports mean of last 3 |
+| RoboMME | `mt-v4-70k-…-28d80fb948f834df` — **curve LANDED 2026-09-06 (§57)**: 12.0/12.9/14.1/15.1/16.75/16.5/14.4 % on the execute-10 lane, 800 eps/milestone | 10k…60k, 69999 | paper-protocol re-score of the candidate steps (30k/50k/69999) still owed, ≈1.5 h each on one GPU | done for selection; paper protocol pending | A19 rule degenerate (whole rise < 5 pp): 10000 at MDE 5, 30000 at 2 SE, 40000 at 2 pp, argmax 50000 → **user decision** |
 | ReMemBench | `s0-6ab9621b9d58b326` (b33d75ea…), 86,400 s | 15k, 30k, 45k, 59999 | 264 rollouts | local 2×5090 ≈2.7 h/eval → 4 evals ≈11 h base; 16 with the ω arms ≈43 h | base curve → s* |
 | RoboCerebra | `a0_base-169c383cda9d32a9` (e2e28599…), 172,800 s | 15k, 30k, 45k, 59999 | curve cell (Ideal 10×10, K=8, CRN) then full v3 at s* | local: 0.66 h base / 3.0 h ω per curve cell; full v3 6.7 h base / 25.4 h ω → ≈42 h on two lanes for base+R1+R2 | base curve → s* (prior s* = 15k) |
 

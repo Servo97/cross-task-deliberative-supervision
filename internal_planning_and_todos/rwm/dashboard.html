@@ -75,7 +75,7 @@ a{color:var(--accent)}
   <div class="eyebrow">Research world model · cross-task deliberative workspace supervision</div>
   <h1>H14 World Model</h1>
   <p class="lede">Hypothesis tree, sealed evidence, and the live experiment board. Maintained from <code>internal_planning_and_todos/rwm/</code> in <code>Servo97/cross-task-deliberative-supervision</code>; numbers carry their protocol and n in the node files.</p>
-  <div class="stamp">as of 2026-09-05 01:40 UTC · authority: rwm/README.md · rwm/board.md</div>
+  <div class="stamp">as of 2026-09-06 07:30 UTC · authority: rwm/README.md · rwm/board.md</div>
 </header>
 
 <section>
@@ -86,7 +86,7 @@ a{color:var(--accent)}
   <div class="tiles">
     <div class="tile"><b>13</b><span>hypothesis nodes</span></div>
     <div class="tile"><b>4 / 6</b><span>confirmed · open</span></div>
-    <div class="tile"><b>3 / 3</b><span>base curves trained · 0 evaluated</span></div>
+    <div class="tile"><b>3 / 3</b><span>base curves trained · 1 evaluated</span></div>
     <div class="tile"><b>0</b><span>policy-level results yet</span></div>
   </div>
 </section>
@@ -97,7 +97,7 @@ a{color:var(--accent)}
     <thead><tr><th>item</th><th>what it produces</th><th>status</th><th>where it lives now</th></tr></thead>
     <tbody>
       <tr><td class="id">rmb base-60k s0-6ab9621b…</td><td>ReMemBench base maturity curve, milestones 15k/30k/45k/59999</td><td><span class="pill ok">TRAINED</span> · evals not run (local lane lost CUDA)</td><td>all four milestones local: <code>wsm_data/wsmv2_scratch/rmb60k/ckpt/</code></td></tr>
-      <tr><td class="id">rmme M0-70k 28d80fb9…</td><td>RoboMME base curve, 7 milestones (recipe v4_70k)</td><td><span class="pill ok">TRAINED</span> · milestone evals never fired (preflight blocked by the launcher's backlog guard)</td><td>all 7 milestones local: <code>wsm_data/s3_salvage/…/mt-v4-70k-…-28d80fb948f834df/deploy/</code></td></tr>
+      <tr><td class="id">rmme M0-70k 28d80fb9…</td><td>RoboMME base maturity curve, 7 milestones × 16 tasks × 50 episodes (execute-10 selection lane)</td><td><span class="pill ok">EVALUATED 09-06</span> 12.0 / 12.9 / 14.1 / 15.1 / <b>16.75</b> / 16.5 / 14.4 % at 10k…60k, 69999; plateau 50–60k, −2.4 pp at 69999 (n.s.). A19 rule degenerate (whole rise &lt; 5 pp MDE): s* = 10000 literally, 30000 at 2 SE, argmax 50000 → <b>common-step decision pending</b> (status §57)</td><td><code>rwm/evidence/E-rmme-base-curve-a19.md</code></td></tr>
       <tr><td class="id">rcb base-60k a7cf2047…</td><td>RoboCerebra base curve, 60k, 48 h class</td><td><span class="pill ok">TRAINED 09-05 00:08</span> · evals not run</td><td>milestones pulled to <code>wsm_data/s3_salvage/…/robocerebra/checkpoints/pi05/a0_base/</code></td></tr>
       <tr><td class="id">Stage-E #3 772597789979f88a</td><td>Encoder retrain, 10 serve-consistent cells on labels <code>91461e8df6f2d143</code></td><td><span class="pill ok">LANDED 09-05 01:05</span> all 10 cells; E1b 30–39× vs ctrl-0b 0.6–6.7× (3/3 seeds); only E1b s28 <code>109e99680ca5c198</code> passes G1b on every tap; E1b-4tap fails the robocasa eff-rank bar (status §56)</td><td>encoders + ω stores local: <code>wsm_data/s3_salvage/…/stage_e/772597789979f88a/</code></td></tr>
       <tr><td class="id">&lt;V2C&gt; labels 91461e8d…</td><td>Union label chain, 28,722 segments, four domains, 261k typed edges</td><td><span class="pill ok">SEALED</span></td><td><code>wsm_data/deliberation/stage_e_labels/</code></td></tr>
@@ -140,8 +140,8 @@ a{color:var(--accent)}
     <div class="body"><p>[8 demo ω ; 16 live ω] window, K=24. Base anchor 17.875 % vs teacher 46.00 %. Two pre-GPU defects fixed: serve-aligned store grid; decay-init −4.0 on all arms (zero-init erased the prefix below the fp16 floor). Tap + tapserve stores complete.</p></div></details>
   <details><summary><span class="id">H14.8</span><span class="name">Max-effort judging gives better labels (user)</span><span class="pill idle">PARKED</span></summary>
     <div class="body"><p>Pre-registered rule A17. Both pilots failed on harness defects (no measurement). Parked at low effort; re-pilot only if label quality becomes the binding constraint.</p></div></details>
-  <details><summary><span class="id">H14.9</span><span class="name">Train to saturation; select checkpoints by the evaluated curve (user)</span><span class="pill open">OPEN · 2 of 3 base curves trained, 0 evaluated</span></summary>
-    <div class="body"><p>RoboMME 70k (7 milestones, salvaged), ReMemBench 60k (4 milestones, local), RoboCerebra 60k (lost in flight). Step chosen on the base curve, applied to every arm. Prior: RoboCerebra 15k ≈ 30k ≈ 45k within ≈1.4 pp (MDE ≈4 pp). First local job: the ReMemBench base curve, one GPU, ≈5.4 h per milestone.</p></div></details>
+  <details><summary><span class="id">H14.9</span><span class="name">Train to saturation; select checkpoints by the evaluated curve (user)</span><span class="pill open">OPEN · RoboMME curve in; rmb/rcb not evaluated</span></summary>
+    <div class="body"><p>RoboMME (execute-10 lane, 800 episodes per milestone): 12.0 → 16.75 % from 10k to 50k, plateau 50–60k, −2.4 pp at 69999. The pre-registered rule returns 10000 because the whole rise is below the 5 pp MDE; 30000 at 2 SE; argmax 50000. Common arm step is a pending decision. ReMemBench (4 milestones, local) and RoboCerebra (4 milestones, salvaged) still to evaluate; prior: RoboCerebra 15k ≈ 30k ≈ 45k within ≈1.4 pp.</p></div></details>
   <details><summary><span class="id">H14.10</span><span class="name">K-token workspace &gt; 1-token at fixed signal (C4)</span><span class="pill idle">NOT STARTED</span></summary>
     <div class="body"><p>Gated on H14.5.</p></div></details>
   <details><summary><span class="id">H14.11</span><span class="name">Serve-consistency constraint</span><span class="pill ok">CONFIRMED failure mode → rule</span></summary>
@@ -167,7 +167,8 @@ a{color:var(--accent)}
 <section>
   <h2>Next actions (for whoever picks this up)</h2>
   <ol class="next">
-    <li>Reboot the local box; run GPU0-only with <code>JAX_PLATFORMS=cuda</code>. Evaluate the four ReMemBench base milestones (<code>rwm/todos/T-maturity.md</code>) → the first evaluated maturity curve.</li>
+    <li>Decide the common RoboMME arm step (10000 by the literal rule · 30000 at 2 SE · 50000 argmax · 69999 for continuity); optionally re-score those three under the paper protocol on Babel (≈1.5 h each) first.</li>
+    <li>Evaluate the four ReMemBench base milestones and the four RoboCerebra milestones (<code>rwm/todos/T-maturity.md</code>) on Babel or GPU0.</li>
     <li>Retrain Stage-E cells locally (E1b / ctrl-0b / ctrl-Eb, seeds 20260828–30, plus the two 4-tap cells) on the four tap stores + <code>&lt;V2C&gt;</code>; read the retrieval gates; D7 stored-mode parity on every exported ω store.</li>
     <li>Port one node entry (<code>robocerebra_stage_entry.sh</code> or the ReMemBench Stage-S launcher) to plain <code>torchrun</code>/slurm on whatever multi-GPU cluster is available; π0.5 post-training does not fit one 5090.</li>
     <li>Then the ω arms in the pre-registered order: ReMemBench P1′/P2′ pair first (needs the serve-side ω consumer), RoboCerebra R1/R2, RoboMME M-arms.</li>

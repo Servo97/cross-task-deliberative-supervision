@@ -1,0 +1,498 @@
+{
+  "campaign_dir": "/home/sarveshp/Research/TRI/wsm_data/s3_salvage/studies/long_context_v1/evaluations/fixed50_campaigns/a19-m0-70k-milestones-fixed50-p5-parallel-v1",
+  "cells": 112,
+  "points": {
+    "10000": {
+      "successes": 96,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          4,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          0,
+          50
+        ],
+        "ButtonUnmask": [
+          3,
+          50
+        ],
+        "VideoPlaceButton": [
+          11,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          5,
+          50
+        ],
+        "PickXtimes": [
+          12,
+          50
+        ],
+        "StopCube": [
+          1,
+          50
+        ],
+        "SwingXtimes": [
+          11,
+          50
+        ],
+        "PickHighlight": [
+          1,
+          50
+        ],
+        "MoveCube": [
+          11,
+          50
+        ],
+        "InsertPeg": [
+          0,
+          50
+        ],
+        "RouteStick": [
+          2,
+          50
+        ],
+        "BinFill": [
+          7,
+          50
+        ],
+        "VideoPlaceOrder": [
+          13,
+          50
+        ],
+        "VideoRepick": [
+          1,
+          50
+        ],
+        "VideoUnmask": [
+          14,
+          50
+        ]
+      }
+    },
+    "20000": {
+      "successes": 103,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          4,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          0,
+          50
+        ],
+        "ButtonUnmask": [
+          6,
+          50
+        ],
+        "VideoPlaceButton": [
+          12,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          9,
+          50
+        ],
+        "PickXtimes": [
+          16,
+          50
+        ],
+        "StopCube": [
+          0,
+          50
+        ],
+        "SwingXtimes": [
+          11,
+          50
+        ],
+        "PickHighlight": [
+          3,
+          50
+        ],
+        "MoveCube": [
+          6,
+          50
+        ],
+        "InsertPeg": [
+          0,
+          50
+        ],
+        "RouteStick": [
+          1,
+          50
+        ],
+        "BinFill": [
+          13,
+          50
+        ],
+        "VideoPlaceOrder": [
+          10,
+          50
+        ],
+        "VideoRepick": [
+          1,
+          50
+        ],
+        "VideoUnmask": [
+          11,
+          50
+        ]
+      }
+    },
+    "30000": {
+      "successes": 113,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          3,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          0,
+          50
+        ],
+        "ButtonUnmask": [
+          8,
+          50
+        ],
+        "VideoPlaceButton": [
+          13,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          10,
+          50
+        ],
+        "PickXtimes": [
+          14,
+          50
+        ],
+        "StopCube": [
+          1,
+          50
+        ],
+        "SwingXtimes": [
+          13,
+          50
+        ],
+        "PickHighlight": [
+          2,
+          50
+        ],
+        "MoveCube": [
+          11,
+          50
+        ],
+        "InsertPeg": [
+          1,
+          50
+        ],
+        "RouteStick": [
+          2,
+          50
+        ],
+        "BinFill": [
+          12,
+          50
+        ],
+        "VideoPlaceOrder": [
+          10,
+          50
+        ],
+        "VideoRepick": [
+          1,
+          50
+        ],
+        "VideoUnmask": [
+          12,
+          50
+        ]
+      }
+    },
+    "40000": {
+      "successes": 121,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          7,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          1,
+          50
+        ],
+        "ButtonUnmask": [
+          12,
+          50
+        ],
+        "VideoPlaceButton": [
+          10,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          13,
+          50
+        ],
+        "PickXtimes": [
+          15,
+          50
+        ],
+        "StopCube": [
+          3,
+          50
+        ],
+        "SwingXtimes": [
+          13,
+          50
+        ],
+        "PickHighlight": [
+          1,
+          50
+        ],
+        "MoveCube": [
+          10,
+          50
+        ],
+        "InsertPeg": [
+          1,
+          50
+        ],
+        "RouteStick": [
+          2,
+          50
+        ],
+        "BinFill": [
+          14,
+          50
+        ],
+        "VideoPlaceOrder": [
+          8,
+          50
+        ],
+        "VideoRepick": [
+          0,
+          50
+        ],
+        "VideoUnmask": [
+          11,
+          50
+        ]
+      }
+    },
+    "50000": {
+      "successes": 134,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          6,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          3,
+          50
+        ],
+        "ButtonUnmask": [
+          12,
+          50
+        ],
+        "VideoPlaceButton": [
+          12,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          12,
+          50
+        ],
+        "PickXtimes": [
+          16,
+          50
+        ],
+        "StopCube": [
+          2,
+          50
+        ],
+        "SwingXtimes": [
+          16,
+          50
+        ],
+        "PickHighlight": [
+          3,
+          50
+        ],
+        "MoveCube": [
+          14,
+          50
+        ],
+        "InsertPeg": [
+          0,
+          50
+        ],
+        "RouteStick": [
+          2,
+          50
+        ],
+        "BinFill": [
+          14,
+          50
+        ],
+        "VideoPlaceOrder": [
+          10,
+          50
+        ],
+        "VideoRepick": [
+          0,
+          50
+        ],
+        "VideoUnmask": [
+          12,
+          50
+        ]
+      }
+    },
+    "60000": {
+      "successes": 132,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          6,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          4,
+          50
+        ],
+        "ButtonUnmask": [
+          11,
+          50
+        ],
+        "VideoPlaceButton": [
+          15,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          11,
+          50
+        ],
+        "PickXtimes": [
+          14,
+          50
+        ],
+        "StopCube": [
+          3,
+          50
+        ],
+        "SwingXtimes": [
+          18,
+          50
+        ],
+        "PickHighlight": [
+          3,
+          50
+        ],
+        "MoveCube": [
+          14,
+          50
+        ],
+        "InsertPeg": [
+          1,
+          50
+        ],
+        "RouteStick": [
+          1,
+          50
+        ],
+        "BinFill": [
+          10,
+          50
+        ],
+        "VideoPlaceOrder": [
+          8,
+          50
+        ],
+        "VideoRepick": [
+          1,
+          50
+        ],
+        "VideoUnmask": [
+          12,
+          50
+        ]
+      }
+    },
+    "69999": {
+      "successes": 115,
+      "episodes": 800,
+      "tasks": {
+        "PatternLock": [
+          7,
+          50
+        ],
+        "ButtonUnmaskSwap": [
+          4,
+          50
+        ],
+        "ButtonUnmask": [
+          9,
+          50
+        ],
+        "VideoPlaceButton": [
+          11,
+          50
+        ],
+        "VideoUnmaskSwap": [
+          9,
+          50
+        ],
+        "PickXtimes": [
+          14,
+          50
+        ],
+        "StopCube": [
+          2,
+          50
+        ],
+        "SwingXtimes": [
+          15,
+          50
+        ],
+        "PickHighlight": [
+          1,
+          50
+        ],
+        "MoveCube": [
+          13,
+          50
+        ],
+        "InsertPeg": [
+          2,
+          50
+        ],
+        "RouteStick": [
+          1,
+          50
+        ],
+        "BinFill": [
+          8,
+          50
+        ],
+        "VideoPlaceOrder": [
+          6,
+          50
+        ],
+        "VideoRepick": [
+          0,
+          50
+        ],
+        "VideoUnmask": [
+          13,
+          50
+        ]
+      }
+    }
+  },
+  "mde_pp": 5.0,
+  "selected_step": 10000
+}
