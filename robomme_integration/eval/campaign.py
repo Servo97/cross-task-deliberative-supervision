@@ -998,10 +998,17 @@ def verify_gates(
         if _sha256(resolved["vla_eval"]) != wrapper["sha256"]:
             raise ValueError("relocatable vla-eval wrapper digest mismatch")
     render_environment = receipt.get("render_environment")
+    # 2026-09-05 (preflight 43a532a7…): "auto" probes the native Vulkan path in a child process with a
+    # hard-coded 15 s watchdog (vla_eval.benchmarks.robomme.benchmark.native_render_path_works). With
+    # 8 lanes × 4 shards probing at once next to 8 JIT-compiling policy servers, 1–2 probes per lane
+    # timed out, the harness declared the native path "hung" and switched to lavapipe, whose ICD the
+    # image does not ship → RuntimeError at reset. The native path rendered in 24/32 shards on the
+    # same node, so the p5 native lanes pin it; a genuinely affected host now fails loudly at the
+    # 1200 s stall watchdog instead of flapping.
     if render_environment != {
         "MUJOCO_GL": "egl",
         "PYOPENGL_PLATFORM": "egl",
-        "ROBOMME_USE_LAVAPIPE": "auto",
+        "ROBOMME_USE_LAVAPIPE": "0",
     }:
         raise ValueError("runtime render environment is not the sealed EGL/native-preflight contract")
     return Runtime(

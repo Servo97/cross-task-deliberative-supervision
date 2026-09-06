@@ -153,7 +153,7 @@ fi
 # uv-locked OpenPI environment.  The bundled evaluator site is a fallback for simulator-only
 # packages; putting it ahead of OpenPI previously shadowed NumPy and made JAX unimportable.
 export PYTHONPATH="$HARNESS:$ROBOMME:$MANISKILL:$OPENPI_SITE:$SITE:$CODE"
-export ROBOMME_USE_LAVAPIPE=auto
+export ROBOMME_USE_LAVAPIPE=0  # native Vulkan path; "auto" probes flapped under 32 concurrent shards (2026-09-05, §56.10)
 export LP_NUM_THREADS=4 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 
 "$PY" - <<'PY'

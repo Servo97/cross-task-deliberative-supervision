@@ -42,7 +42,7 @@ def _runtime(tmp_path: Path, *, policy_python: Path | None = None) -> campaign.R
         render_environment={
             "MUJOCO_GL": "egl",
             "PYOPENGL_PLATFORM": "egl",
-            "ROBOMME_USE_LAVAPIPE": "auto",
+            "ROBOMME_USE_LAVAPIPE": "0",
         },
     )
 

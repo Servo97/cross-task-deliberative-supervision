@@ -92,7 +92,7 @@ def _gates(tmp_path: Path) -> tuple[Path, Path, dict]:
             "render_environment": {
                 "MUJOCO_GL": "egl",
                 "PYOPENGL_PLATFORM": "egl",
-                "ROBOMME_USE_LAVAPIPE": "auto",
+                "ROBOMME_USE_LAVAPIPE": "0",
             },
         },
         field="receipt_sha256",

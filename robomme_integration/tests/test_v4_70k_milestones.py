@@ -603,7 +603,7 @@ def _gates_for(tmp_path: Path, openpi: dict) -> tuple[Path, Path, dict]:
                 "sha256": hashlib.sha256(paths["vla_eval"].read_bytes()).hexdigest(),
             },
             "paths": {name: str(path) for name, path in paths.items()},
-            "render_environment": {"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "ROBOMME_USE_LAVAPIPE": "auto"},
+            "render_environment": {"MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl", "ROBOMME_USE_LAVAPIPE": "0"},
         },
         field="receipt_sha256",
     )

@@ -255,7 +255,7 @@ def build_runtime_receipt(claim: dict, preflight_file_sha256: str, source_sha256
         "render_environment": {
             "MUJOCO_GL": "egl",
             "PYOPENGL_PLATFORM": "egl",
-            "ROBOMME_USE_LAVAPIPE": "auto",
+            "ROBOMME_USE_LAVAPIPE": "0",  # native path; see campaign.py render-contract note (2026-09-05)
         },
     }
     return campaign.seal_document(receipt, field="receipt_sha256")

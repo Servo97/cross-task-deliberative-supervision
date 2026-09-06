@@ -364,7 +364,7 @@ def _runtime_from_args(args: argparse.Namespace, manifest: dict) -> campaign.Run
         render_environment={
             "MUJOCO_GL": "egl",
             "PYOPENGL_PLATFORM": "egl",
-            "ROBOMME_USE_LAVAPIPE": "auto",
+            "ROBOMME_USE_LAVAPIPE": "0",  # native path; see campaign.py render-contract note (2026-09-05)
         },
     )
 

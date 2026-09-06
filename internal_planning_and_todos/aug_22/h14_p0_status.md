@@ -7770,3 +7770,12 @@ site — so the overlay does not disturb the receipt. Proper fix for later: regi
 tarball built with the CUDA torch and re-pin `RUNTIME_SHA` in `launch_p5_campaign.py` /
 `framesamp_b1_cloud.py` (deferred; ~1 h + 3 GB upload). Fire #9
 `p5-native-eval-v1-93eb1f24198da37de5e0` at 400, source tree `5b463c57…`.
+
+### 56.9 Fire #9 failed fast as designed (overlay no-op); fire #10 (2026-09-05 22:50Z)
+
+`93eb1f24…`: the overlay ran but `torch==2.9.1` was already satisfied by the tarball's `2.9.1+cpu`,
+so uv installed nothing and the post-check failed fast (`simulator torch 2.9.1+cpu cuda False`, exit
+35, no lanes launched — the fail-fast saved the 15 min). Fix: pin `torch==2.9.1+cu128` and
+`--reinstall-package torch` (verified locally: uv resolves exactly `torch==2.9.1+cu128` from the
+cu128 index). Repo `ec2f216`. Fire #10 `p5-native-eval-v1-43a532a71916ad369984` at 400, source tree
+`74d0d275…`.
