@@ -7825,3 +7825,22 @@ execute-10 lane, SELECTION only — not comparable to the 17.875 % paper-protoco
 result.complete.json`; a local loop syncs them to `wsm_data/s3_salvage/…` every 30 min. Reading
 (A19): per-milestone success over the 16 tasks → base curve → s*; deferred cells (24 h cap) are
 resumed by re-firing the same line.
+
+### 56.13 Campaign node rejected the 400 claim; last node-side pin removed; preflight #12 (2026-09-06 00:45Z)
+
+Campaign `57f9dc87…` staged cleanly (identity OK, `RUNTIME_RECEIPT_OK`, torch overlay → `2.9.1+cu128
+cuda True`, 8 JAX devices) and then died in `campaign.py`'s node-side claim validation:
+`expected_infrastructure` still carried `"priority": 100` → "p5 parallel action-preflight
+infrastructure mismatch". Fixed (drop the key; check `claim.infrastructure.priority ∈
+action_canary.ALLOWED_PRIORITIES`; repo `d092fed`; 46 eval tests pass). Because `campaign.py` is in
+the bundle, the source tree moved (`ef4c2eb8…`) and the sealed rule requires a matching preflight →
+fire #12 `p5-native-eval-v1-93eae46be2e103c8acb6` at 400, then the campaign again. Grep of
+`robomme_integration/` (non-test, non-framesamp) now shows no priority-100 literal.
+
+### 56.14 Preflight #12 PASSED; campaign #2 FIRED (2026-09-06 01:46Z)
+
+`p5-native-eval-v1-93eae46be2e103c8acb6` (source tree `ef4c2eb8…`, 400): SUCCEEDED 01:46Z,
+`native_parallel_action_passed`. Campaign dry-run against its claim clean (same source tree) →
+submitted at 400, arn `…/31b46f8f-f972-4107-8416-fdfe959b89a9`, queue
+`a19-m0-70k-milestones-fixed50-p5-parallel-v1` (112 cells, 24 h cap). Cells sync to
+`s3_salvage/…/evaluations/fixed50_campaigns/…` every 30 min.
