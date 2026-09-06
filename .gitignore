@@ -50,3 +50,6 @@ draw.io/
 gcp_tpu/
 export/
 papers/
+
+# --- cron status logs from the retired EC2 box (no secrets, but churn) ---
+scripts/ec2/*.log
