@@ -7779,3 +7779,49 @@ so uv installed nothing and the post-check failed fast (`simulator torch 2.9.1+c
 `--reinstall-package torch` (verified locally: uv resolves exactly `torch==2.9.1+cu128` from the
 cu128 index). Repo `ec2f216`. Fire #10 `p5-native-eval-v1-43a532a71916ad369984` at 400, source tree
 `74d0d275…`.
+
+### 56.10 Fire #10: real inference on every lane; "auto" render probe flaps under load (2026-09-06 00:05Z)
+
+`43a532a7…` (cu128 overlay in place): 8 servers up, 8 lanes × 4 shards ran; the Q1 policy served
+`inference arm=q1` on every lane (first call 45.8 s = JIT, then 0.093 s/call; workspace diagnostics
+`plans 1, dense_observations 1, cached_omega_steps 1, saw_video_history True`). 24/32 shards
+rendered; 8 shards (1–2 per lane, always the later-starting ones) died at `reset()`:
+`RuntimeError: Lavapipe rendering requested (ROBOMME_USE_LAVAPIPE='auto') but could not be engaged`.
+Cause: `auto` runs `native_render_path_works()` — a child-process Vulkan probe with a **hard-coded
+15 s** `subprocess.run` timeout — once per shard; with 32 probes racing 8 JIT-compiling servers, some
+exceeded 15 s, were declared "hung", and the harness switched to lavapipe, whose ICD the dexjoco
+image does not ship. Because ≥1 shard per lane failed, each lane exited 1 and the canary's
+32-valid-actions audit could not run.
+
+Fix (repo `9acd7ae`): the sealed render contract for the p5 native lanes is now
+`{MUJOCO_GL: egl, PYOPENGL_PLATFORM: egl, ROBOMME_USE_LAVAPIPE: "0"}` (native path, no probe) in
+`campaign.py` (contract check), `p5_parallel_action_preflight.py` (lane env), `launch_p5_campaign.py`
+(receipt), the preflight entry, and the three tests that pinned "auto". Trade-off recorded: a host
+that genuinely hangs on the native path now fails at the harness's 1200 s stall watchdog instead of
+being rescued by lavapipe — acceptable since lavapipe is not installable on this image anyway. 67
+eval tests pass. Fire #11 `p5-native-eval-v1-5630d7714b7dfe248acc` at 400, source tree `377f9e3f…`.
+
+### 56.11 RoboMME p5 native-eval preflight PASSED on fire #11 (2026-09-06 00:2xZ)
+
+`p5-native-eval-v1-5630d7714b7dfe248acc` (source tree `377f9e3f…`, priority 400): SUCCEEDED; claim
+published at `manifests/claims/preflight/p5-native-eval-v1-5630d7714b7dfe248acc.json` with
+`status = native_parallel_action_passed`; score-redacted evidence archive
+`artifacts/robomme/eval_preflight/<id>/evidence/91a64198…tgz`. The p5 native eval lane has now
+executed end to end on a node for the first time. Eleven fires; the eight distinct node-only defects
+they exposed and fixed (each pinned by a local test or a fail-fast): toolkit entry chmod identity
+drift (§54); bundle missing `launch_guardrails`/`wsm_settings` (§56.2); node-side priority pin
+(§56.3); canary template binding name (§56.4); lane logs never shipped (§56.5–56.6); workspace
+trainer identity pin stale since Aug 12 (§56.7); CPU-only torch in the registered runtime
+(§56.8–56.9); `auto` render probe flapping under 32 concurrent shards (§56.10). Next: the 112-cell
+M0-70k milestone campaign from the same snapshot (`ready/fire_rmme_campaign.sh`, priority 400).
+
+### 56.12 RoboMME M0-70k milestone campaign FIRED (2026-09-06 00:21Z)
+
+`ready/submit_rmme_campaign_0906a_p400.sh` → QUEUED, arn `…/57f9dc87-e807-4724-b627-49bea6bf9b35`;
+queue `a19-m0-70k-milestones-fixed50-p5-parallel-v1` (112 fixed-50 cells: 16 tasks × 7 milestones,
+execute-10 lane, SELECTION only — not comparable to the 17.875 % paper-protocol anchor), priority
+400, max_run 86,400 s, preflight claim `5630d771…`, source tree `377f9e3f…`. Cells land under
+`evaluations/fixed50_campaigns/a19-m0-70k-milestones-fixed50-p5-parallel-v1/cells/<cell>/
+result.complete.json`; a local loop syncs them to `wsm_data/s3_salvage/…` every 30 min. Reading
+(A19): per-milestone success over the 16 tasks → base curve → s*; deferred cells (24 h cap) are
+resumed by re-firing the same line.

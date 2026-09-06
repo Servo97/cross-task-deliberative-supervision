@@ -912,9 +912,15 @@ def verify_gates(
             expected_infrastructure={
                 "instance_type": "ml.p5.48xlarge",
                 "accelerator": "8xH100",
-                "priority": 100,
             },
         )
+        # 2026-09-06 (campaign 57f9dc87… died here on the node): the preflight may run at any allowed
+        # class, mirrored from launch_p5_preflight.ALLOWED_PRIORITIES via the canary module.
+        claim_priority = (preflight.get("infrastructure") or {}).get("priority")
+        if claim_priority not in action_canary.ALLOWED_PRIORITIES:
+            raise ValueError(
+                f"p5 action preflight ran at priority {claim_priority!r}, not in {sorted(action_canary.ALLOWED_PRIORITIES)}"
+            )
     else:
         if preflight.get("kind") != PREFLIGHT_KIND or preflight.get("status") != "native_render_reset_passed":
             raise ValueError("p5 native-render preflight did not pass")
